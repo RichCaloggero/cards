@@ -70,12 +70,37 @@ return shuffleDeck(deck).dealer();
 
 function dealCards (dealer, count = 1) {
 const result = [];
-let current = dealer.next();
-while (current.done === false && count-- > 0) {
-result.push(current.value);
+
+while (count-- > 0) {
 current = dealer.next();
+if (current.done) break;
+result.push(current.value);
+console.log(count, ": ", current.done, ", ", current.value);
 } // while
 
 return result;
 } // dealCards
+
+function createHand (dealer, count) {
+hand = [
+[], // clubs
+[], // spades
+[], // hearts
+[] // diamonds
+];
+const list = [];
+
+for (card of dealCards(dealer, count)) hand[card.suit].push(card);
+
+for (let suit of hand) {
+suit = suit.sort(cardRank);
+for (card of suit) list.push(displayCard(card));
+} // suit
+
+return list;
+
+function cardRank (c1, c2) {
+return c1.rank < c2.rank? 1 : -1;
+} // cardRank
+} // createHand
 
