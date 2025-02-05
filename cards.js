@@ -1,17 +1,14 @@
-function createDeck () {
+export function createDeck () {
 return {
 cards: createCards(),
 order: range(0,51),
-* dealer () {
-for (let value of this.order.values()) {
-yield this.cards[value];
-} // for
-return this;
-} // iterator
+dealer () {
+return this.order.values().map(i => this.cards[i]);
+} // *dealer
 }; // deck
 } // createDeck
 
-function shuffleDeck (deck) {
+export function shuffleDeck (deck) {
 deck.order = new Array(52).fill(-1);
 
 let slot = 0;
@@ -40,7 +37,7 @@ function createCard (rank, suit) {
 return {rank, suit};
 } // createCard
 
-function displayCard (card) {
+export function displayCard (card) {
 const faceCards = ["jack", "queen", "king", "ace"];
 const suitNames = ["clubs", "spades", "hearts", "diamonds"];
 
@@ -64,24 +61,24 @@ const n2 = Math.max(_n1, _n2);
 return Math.floor(Math.random() * (n2-n1 + 1) + n1);
 } // randomInteger
 
-function dealer (deck) {
+export function dealer (deck) {
 return shuffleDeck(deck).dealer();
 } // dealer
 
-function dealCards (dealer, count = 1) {
+export function dealCards (dealer, count = 1) {
 const result = [];
+let current;
 
 while (count-- > 0) {
 current = dealer.next();
 if (current.done) break;
 result.push(current.value);
-console.log(count, ": ", current.done, ", ", current.value);
 } // while
 
 return result;
 } // dealCards
 
-function createHand (dealer, count) {
+export function createHand (dealer, count) {
 hand = [
 [], // clubs
 [], // spades
@@ -90,17 +87,21 @@ hand = [
 ];
 const list = [];
 
-for (card of dealCards(dealer, count)) hand[card.suit].push(card);
+for (const card of dealCards(dealer, count)) hand[card.suit].push(card);
 
 for (let suit of hand) {
-suit = suit.sort(cardRank);
-for (card of suit) list.push(displayCard(card));
+suit = suit.sort(highestFirst);
+for (const card of suit) list.push(card);
 } // suit
 
 return list;
 
-function cardRank (c1, c2) {
+function highestFirst (c1, c2) {
 return c1.rank < c2.rank? 1 : -1;
 } // cardRank
 } // createHand
+
+export function displayHand (hand) {
+return hand.map(card => displayCard(card));
+} // displayHand
 
