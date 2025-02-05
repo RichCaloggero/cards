@@ -4,9 +4,51 @@
 <title>Test</title>
 </head>
 <body>
+<label>hand:
+<br><select id="hand"></select></label>
 
-<script src="cards.js"></script>
+<output id="status"></output>
 
+<script type="module">
+import * as hearts from "./hearts.js";
+import * as cards from "./cards.js";
+
+const $hand = document.querySelector("#hand");
+const $status = document.querySelector("#status");
+
+$hand.addEventListener("click", e => {
+const hand = hearts.playCard(e.target.selectedIndex);
+if (hand instanceof Array) displayHand(hand);
+else displayMessage(hand);
+});
+
+$hand.addEventListener("keyup", e => {
+if (e.key === "Enter") e.target.click();
+}); // enter key clicks
+
+hearts.startNewGame();
+displayHand(hearts.dealNewHand());
+displayMessage("New game.");
+
+function displayHand (hand) {
+fillSelectList($hand, hand);
+$hand.focus();
+} // displayHand
+
+
+function fillSelectList($list, items) {
+$list.innerHTML = "";
+for (const item of items) {
+$list.add(new Option(cards.displayCard(item), JSON.stringify(item)));
+} // for
+
+return $list;
+} // fillSelectList
+
+
+function displayMessage (text) {setTimeout(() => $status.textContent = text, 200);}
+
+</script>
 
 </body>
 </html>
