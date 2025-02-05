@@ -18,21 +18,26 @@ const $status = document.querySelector("#status");
 
 $hand.addEventListener("click", e => {
 const hand = hearts.playCard(e.target.selectedIndex);
-if (hand instanceof Array) displayHand(hand);
-else displayMessage(hand);
+if (hand instanceof Array) {
+displayHand(hand);
+document.dispatchEvent(Event("cardPlayed"));
+} else {
+displayMessage(hand);
+} // if
 });
 
 $hand.addEventListener("keyup", e => {
 if (e.key === "Enter") e.target.click();
 }); // enter key clicks
 
-hearts.startNewGame();
+hearts.startNewGame(document);
 displayHand(hearts.dealNewHand());
-displayMessage("New game.");
+hearts.playTurn(2);
+
+//displayMessage("New game.");
 
 function displayHand (hand) {
 fillSelectList($hand, hand);
-$hand.focus();
 } // displayHand
 
 
@@ -46,7 +51,6 @@ return $list;
 } // fillSelectList
 
 
-function displayMessage (text) {setTimeout(() => $status.textContent = text, 200);}
 
 </script>
 
