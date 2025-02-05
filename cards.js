@@ -55,7 +55,7 @@ for (let n = n1; n <= n2; n++) result.push(n);
 return result;
 } // range
 
-function randomInteger (_n1, _n2) {
+export function randomInteger (_n1, _n2) {
 const n1 = Math.min(_n1, _n2);
 const n2 = Math.max(_n1, _n2);
 return Math.floor(Math.random() * (n2-n1 + 1) + n1);
