@@ -7,6 +7,7 @@
 <label>hand:
 <br><select id="hand"></select></label>
 
+<hr>
 <output id="status"></output>
 
 <script type="module">
@@ -14,32 +15,41 @@ import * as hearts from "./hearts.js";
 import * as cards from "./cards.js";
 
 const $hand = document.querySelector("#hand");
-const $status = document.querySelector("#status");
 
-$hand.addEventListener("click", e => {
-const hand = hearts.playCard(e.target.selectedIndex);
-if (hand instanceof Array) {
-displayHand(hand);
-document.dispatchEvent(Event("cardPlayed"));
-} else {
-displayMessage(hand);
-} // if
-});
+/// start
 
-$hand.addEventListener("keyup", e => {
-if (e.key === "Enter") e.target.click();
-}); // enter key clicks
-
+setupEventListeners();
 hearts.startNewGame(document);
-displayHand(hearts.dealNewHand());
-hearts.playTurn(2);
 
-//displayMessage("New game.");
 
 function displayHand (hand) {
 fillSelectList($hand, hand);
 } // displayHand
 
+function setupEventListeners () {
+$hand.addEventListener("click", e => hearts.dispatch("userCardPlayed", {index: e.target.selectedIndex}));
+
+$hand.addEventListener("keyup", e => {
+if (e.key === "Enter") e.target.click();
+}); // enter key clicks
+
+document.addEventListener("newRound", e => {
+displayScore(e.player.points);
+displayHand(e.player.hand);
+});
+
+document.addEventListener("cardPlayed", e => {
+if (e.playerIndex === 0) {
+displayHand(e.hand);
+} // if
+
+logMessage (`${e.player.name} played ${cards.displayCard(e.card)}.`);
+});
+
+document.addEventListener("userMessage", e => logMessage(e.message));
+document.addEventListener("error", e => logMessage(e.message));
+
+} // setupEventListeners
 
 function fillSelectList($list, items) {
 $list.innerHTML = "";
@@ -50,7 +60,17 @@ $list.add(new Option(cards.displayCard(item), JSON.stringify(item)));
 return $list;
 } // fillSelectList
 
+function displayScore (score) {
+logMessage(`Your score is ${score}.`);
+} // displayScore
 
+export function logMessage (text, deleteContents) {
+//setTimeout(() => {
+const $status = document.querySelector("#status");
+if (deleteContents) $status.innerHTML = "";
+$status.insertAdjacentHTML("beforeEnd", `<p>${text}</p>\n`);
+//}, 200);
+} // logMessage
 
 </script>
 
