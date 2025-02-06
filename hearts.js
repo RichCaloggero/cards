@@ -20,68 +20,97 @@ player.points = 0;
 player.hand = [];
 } // for
 
+runGame();
 } // startNewGame
 
-export function dealNewHand () {
-trick = [];
+function runGame () {
+do {
+dealNewRound();
+trick = playRound(selectRoundStarter());
+assignTrick(trick);
+} while (highestScore() <= 100);
+
+displayScores();
+} // runGame
+
+export function dealNewRound () {
 const dealer = cards.dealer(deck);
 
 for (const player of players) {
 player.hand = cards.createHand(dealer, 13);
 } // for
 
-
-return players[0].hand;
+dispatch("newRound", {player: players[0]});
 } // dealNewHand
 
-export async function playTurn (startIndex) {
-let index = startIndex;
-do {
-const player = players[index];
-//console.log(index, ": ", player);
+export async function playRound (startIndex) {
+let playerIndex = startIndex;
+const trick = [];
 
-if (index === 0) {
-await userPlayedCard();
+do {
+const player = players[playerIndex ];
+//console.log(playerIndex , ": ", player.name);
+
+const selection = playerIndex === 0? await userCardPlayed()
+: selectCard(player);
+//console.log("selection: ", selection);
+
+const card = playCard(selection, player);
+if (validCard(card)) {
+//trick.push(card);
+dispatch("cardPlayed", {hand: players[0].hand, card, player, playerIndex});
+
 } else {
-const player = players[index];
-const selection = playCard(selectCard(player), player);
+dispatch("error", {card});
 } // if
 
-index = (index+1) % players.length;
-console.log("new index: ", index);
-} while (index !== startIndex);
-} // playTurn
+playerIndex = (playerIndex+1) % players.length;
+} while (playerIndex !== startIndex);
+} // playRound
 
 function selectCard (player) {
 if (player.hand.length === 0) return -1;
-const index = cards.randomInteger(0, player.hand.length);
-return index;
+return cards.randomInteger(0, player.hand.length-1);
 } // selectCard
 
-export function playCard (index, player = players[0]) {
+function playCard (index, player) {
 if (trick.length === players.length) return "trick is full";
 else if (player.hand.length === 0) return `${player.name} has no more cards`;
 else if (index < 0 || index >= player.hand.length) return "invalid card; index out of bounds.";
 else {
-player.hand.splice(index, 1);
-return player.hand;
+return player.hand.splice(index, 1)[0];
 } // if
 } // playCard
 
-export async function userPlayedCard (context) {
+export async function userCardPlayed (context) {
+dispatch("userMessage", {message: "Your turn."});
 return new Promise((resolve) => {
-displayMessage("Your turn.");
-
-document.addEventListener("cardPlayed", e => resolve(e.target.selectedIndex));
+document.addEventListener("userCardPlayed", e => resolve(e.index));
 });
 } // userPlayedCard 
 
+function selectRoundStarter () {
+return 2;
+} // selectRoundStarter
 
-export function displayMessage (text) {
-//setTimeout(() => {
-document.querySelector("#status").textContent = text
-//}, 200);
-} // displayMessage
+function assignTrick (trick) {
+} // assignTrick
 
+function highestScore () {
+return 101;
+} // highestScore
+
+function displayScores () {
+dispatch("message", {message: "No scores available."});
+} // displayScores
+
+function validCard (card) {
+return card instanceof Object && not(card instanceof Array) && not(card instanceof String);
+} // validCard
+
+export function dispatch (type, options) {
+const event = Object.assign(new Event(type), options);
+document.dispatchEvent(event);
+} // dispatch
 
 function not (x) {return !x;}
