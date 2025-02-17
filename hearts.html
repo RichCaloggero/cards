@@ -1,0 +1,96 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+<title>Hearts</title>
+</head>
+<body>
+<label>hand:
+<br><select id="hand"></select></label>
+
+<hr>
+<output id="log"></output>
+<div><output id="status"></output></div>
+
+<script type="module">
+import * as hearts from "./hearts.js";
+import * as cards from "./cards.js";
+import { dispatch } from "./utilities.js";
+
+const $hand = document.querySelector("#hand");
+
+/// start
+
+setupEventListeners();
+hearts.startNewGame(document);
+
+
+function displayHand (hand) {
+fillSelectList($hand, hand);
+} // displayHand
+
+function setupEventListeners () {
+$hand.addEventListener("click", e => dispatch("userCardPlayed", {card: JSON.parse(e.target.selectedOptions[0].value)}));
+
+$hand.addEventListener("keyup", e => {
+if (e.key === "Enter") {
+if (e.ctrlKey) dispatch("userCommand", {command: "newRound", data: e});
+else e.target.click();
+} // if
+}); // enter key clicks
+
+document.addEventListener("updateHand", e => {
+//console.log("updateHand: ", e.hand);
+displayHand(e.hand)
+});
+
+document.addEventListener("trickComplete", e => {
+logMessage(`Trick complete; ${e.player.name} took ${hearts.displayCards(e.cards)}`);
+displayScores(e.players);
+});
+
+document.addEventListener("userMessage", e => logMessage(e.message));
+document.addEventListener("error", e => logMessage(e.message));
+
+} // setupEventListeners
+
+
+function fillSelectList($list, items) {
+$list.innerHTML = "";
+for (const item of items) {
+$list.add(new Option(cards.displayCard(item), JSON.stringify(item)));
+} // for
+
+return $list;
+} // fillSelectList
+
+function displayScores (players) {
+logMessage("scores:");
+if (players.every(p => p.score === 0)) logMessage("No score yet.");
+else logMessage(
+players.map(p => `${p.name} has ${p.score} points.`).join("<br>")
+);
+} // displayScores
+
+function displayYourScore (score) {
+if (score > 0) logMessage(`Your score is ${score}.`);
+} // displayScore
+
+function clearLog () {document.querySelector("#log").innerHTML = "";}
+function logMessage (text, deleteContents) {
+const $log = document.querySelector("#log");
+if (deleteContents) $log.innerHTML = "";
+$log.insertAdjacentHTML("beforeEnd", `<p>${text}</p>\n`);
+} // logMessage
+
+function statusMessage (text) {
+setTimeout(() => {
+document.querySelector("#status").textContent = text;
+}, 50);
+} // statusMessage
+
+//alert("main module loaded");
+
+</script>
+
+</body>
+</html>
