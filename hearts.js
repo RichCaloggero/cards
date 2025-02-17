@@ -26,13 +26,14 @@ player.tricks = [];
 playGame();
 } // startNewGame
 
-function playGame () {
+async function playGame () {
 roundCount = 0;
 
-//while (not(gameComplete())) {
+while (not(gameComplete())) {
 roundCount += 1;
-playRound (roundCount);
-//} // while
+await playRound (roundCount);
+userMessage(displayScores(players));
+} // while
 } // playGame
 
 async function playRound (roundCount) {
@@ -260,8 +261,10 @@ return players.map(p => p.score)
 .reduce((score, player) => score = player.score > score? player.score : score, 0)
 } // highestScore
 
-function displayScores () {
-userMessage("No scores available.");
+function displayScores (players) {
+return "<pre>\n"
++ players.map(p => `${p.name}: ${p.score}`).join("\n")
++ "</pre>\n";
 } // displayScores
 
 
