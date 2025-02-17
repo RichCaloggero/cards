@@ -49,6 +49,7 @@ while (not(roundComplete())) {
 trickWinner = await playTrick(trickWinner?.player);
 //console.log("trickWinner: ", trickWinner);
 userMessage(`${trickWinner.player.name} took ${displayTrick(trickWinner.trick)}.`);
+if (heartsBroken) userMessage("Hearts have been broken.");
 } // while roundNotComplete()
 
 userMessage(`End of round ${roundCount}.`);
@@ -68,7 +69,7 @@ isFirstTrickInRound = false;
 if (isHumanPlayer(player)) dispatch("updateHand", {hand: player.hand});
 
 userMessage(`${player.name} played ${cards.displayCard(card)}.`);
- } // while
+} // while
 
 const winner = assignTrick(trick);
 return {trick, player: winner};
@@ -158,18 +159,17 @@ if (player.hand.length === 0) return `${player.name} has no more cards`;
 
 /// checks on human player
 if (isHumanPlayer(player)) {
+if (isFirstCardInTrick) {
+if (card.suit === hearts && not(heartsBroken)) return "Hearts have not been broken; try again.";
+
+} else {
 // follow suit
-if (not(isFirstCardInTrick) && card.suit !== suit && cards.findLowestCardInSuit(suit, player.hand)) {
-console.log("you didn't follow suit");
-return (`You must follow suit; ${cards.suitNames[suit]} is in play.`);
-
-} else if (not(heartsBroken) && card.suit === hearts && not(player.hand.every(card => card.suit === hearts))) {
-return "Hearts have not been broken; try again.";
+const playerHasSuit = cards.findLowestCardInSuit(suit, player.hand);
+if (playerHasSuit && card.suit !== suit) return `You must follow suit; ${cards.suitNames[suit]} is in play`;
 } // if
-} // iff
+} // if
 
-
-heartsBroken = card.suit === hearts;
+heartsBroken = heartsBroken || (card.suit === hearts);
 const index = indexOfCardInHand(card, player.hand);
 if (index >= 0) {
 player.hand.splice(index, 1)[0];
@@ -267,7 +267,7 @@ userMessage("No scores available.");
 
 
 export async function userStartsRound () {
-userMessage("Press control+enter to start a new round.");
+setTimeout(() => userMessage("Press control+enter to start a new round."), 200);
 let e;
 while (e = await blockUntilEvent("userCommand")) {
 console.log(e);
