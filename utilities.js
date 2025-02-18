@@ -17,8 +17,15 @@ return new Promise(resolve => target.addEventListener(event, e => resolve(e), {p
 
 export async function amap(arr,fun) {
     return await Promise.all(arr.map(async v => await fun(v)))
-}
+} // amap
 
+
+export function atLeast (n, ... conditions) {
+if (n <= 0) return false;
+if (conditions.length < n) return false;
+const count = conditions.reduce((n, q) => n = q? n+1 : n);
+return count >= n;
+} // atLeast
 
 export function not (x) {return !x;}
 //alert("utilities module loaded");

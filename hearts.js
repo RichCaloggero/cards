@@ -1,15 +1,15 @@
 import * as cards from "./cards.js";
-import { not, userMessage, errorMessage, blockUntilEvent, dispatch } from "./utilities.js";
+import { not, atLeast, userMessage, errorMessage, blockUntilEvent, dispatch } from "./utilities.js";
 
 
 /// variables global to module
 
 const deck = cards.createDeck();
 export const players= [
-{name: "player 1", hand: [], score: 0, tricks: []},
-{name: "player 2", hand: [], score: 0, tricks: []},
-{name: "player 3", hand: [], score: 0, tricks: []},
-{name: "player 4", hand: [], score: 0, tricks: []}
+{name: "player 1", hand: [], score: 0, tricks: [], strategy: null},
+{name: "player 2", hand: [], score: 0, tricks: [], strategy: null},
+{name: "player 3", hand: [], score: 0, tricks: [], strategy: null},
+{name: "player 4", hand: [], score: 0, tricks: [], strategy: null}
 ]; // players
 let heartsBroken = false;
 let roundCount = 0;
@@ -44,6 +44,7 @@ userMessage(`Starting round ${roundCount}.`);
 dealNewRound();
 dispatch("updateHand", {hand: players[0].hand});
 const trickList = [];
+players.forEach(player => player.strategy = null);
 
 let trickWinner = null;
 while (not(roundComplete())) {
@@ -129,27 +130,19 @@ return order;
 } // reorder
 
 function selectCard (player, suit) {
-const isFirstCardInTrick = suit < 0;
-const hearts = cards.suitNames.indexOf("hearts");
-
-if (player.hand.length === 0) return "no cards left in hand; should never happen";
-if (not(isFirstCardInTrick)) console.log("suit: ", cards.suitNames[suit]);
-
-let card = null;
-if (isFirstCardInTrick) {
-if (heartsBroken) card = cards.findLowestCardInList(player.hand);
-else card =
-cards.findLowestCardInList(player.hand.filter(c => c.suit !== hearts))
-|| cards.findLowestCardInList(player.hand);
-
-} else {
-card = cards.findLowestCardInSuit(suit, player.hand)
-|| cards.findLowestCardInSuit(hearts, player.hand)
-|| cards.findLowestCardInList(player.hand);
+if (isHumanPlayer(player)) {
+userMessage("this should never be called with human player!");
+console.log("this should never be called with human player: ", player);
+return null;
 } // if
 
-if (not(card)) debugger;
-else return card;
+const hand = player.hand;
+const isFirstTrickInRound = hand.length === 13;
+
+if (hand.length === 0) return "no cards left in hand; should never happen";
+
+if (isFirstTrickInRound || player.strategy === null /* because player had two of clubs */) player.strategy = chooseStrategy(hand, suit);
+return executeStrategy(player.strategy, hand, suit);
 } // selectCard
 
 function playCard (card, suit, player) {
@@ -166,7 +159,7 @@ if (card.suit === hearts && not(heartsBroken)) return "Hearts have not been brok
 } else {
 // follow suit
 const playerHasSuit = cards.findLowestCardInSuit(suit, player.hand);
-if (playerHasSuit && card.suit !== suit) return `You must follow suit; ${cards.suitNames[suit]} is in play`;
+if (playerHasSuit && card.suit !== suit) return `You must follow suit; ${cards.suitNames[suit]} is in play.`;
 } // if
 } // if
 
@@ -179,6 +172,56 @@ return "";
 return "error: card not found in hand; this should not happen";
 } // if
 } // playCard
+
+
+/// strategies
+
+function chooseStrategy (hand, suit) {
+if (hasChanceOfShootingTheMoon(hand)) {
+userMessage("I don't know how to shoot the moon yet, so ducking instead.");
+return duckingStrategy;
+} else if (hasQueenOfSpades(hand)) {
+userMessage("I don't know how to get rid of the queen yet, so ducking instead.");
+return duckingStrategy;
+} else return duckingStrategy;
+} // chooseStrategy
+
+function executeStrategy (strategy, hand, suit) {
+try {
+return strategy(hand, suit);
+} catch (e) {
+userMessage(e);
+debugger;
+} // try
+} // executeStrategy
+
+function duckingStrategy (hand, suit) {
+const isFirstCardInTrick = suit < 0;
+const hearts = cards.suitNames.indexOf("hearts");
+let card = null;
+
+if (isFirstCardInTrick) {
+if (heartsBroken) card = cards.findLowestCardInList(hand);
+else card =
+cards.findLowestCardInList(hand.filter(c => c.suit !== hearts))
+|| cards.findLowestCardInList(hand);
+
+} else {
+card = cards.findLowestCardInSuit(suit, hand)
+|| cards.findLowestCardInSuit(hearts, hand)
+|| cards.findLowestCardInList(hand);
+} // if
+
+return card;
+} // duckingStrategy
+
+function getRidOfQueenStrategy (hand, suit) {
+userMessage("I don't know how to get rid of the queen yet.");
+} // shootingStrategy
+
+function shootingStrategy (hand, suit) {
+userMessage("I don't know how to shoot the moon yet.");
+} // shootingStrategy
 
 export function dealNewRound () {
 const dealer = cards.dealer(deck);
@@ -197,10 +240,8 @@ return hand.findIndex(c => cards.isCard(card, c));
 } // indexOfCardInHand
 
 
-
-
 function indexOfPlayerHoldingTwoOfClubs () {
-return players.findIndex(player => indexOfCardInHand(cards.nameToCard("2c"), player.hand) >= 0);
+return players.findIndex(player => hasTwoOfClubs(player.hand));
 } // selectPlayerHoldingTwoOfClubs
 
 function assignTrick (trick) {
@@ -277,5 +318,29 @@ console.log(e);
 if (e.command === "newRound") return;
 } // while
 } // userStartsRound
+
+function hasQueenOfSpades (hand) {
+return cards.has(cards.nameToCard("qs"), hand);
+} // hasQueenOfSpades
+
+function hasTwoOfClubs (hand) {
+return cards.has(cards.nameToCard("2c"), hand);
+} // hasTwoOfClubs
+
+function hasChanceOfShootingTheMoon (hand) {
+const has = cards.has;
+const is = cards.nameToCard;
+
+return atLeast(5, // of the following conditions met
+has(is("ah"), hand),
+has(is("kh"), hand),
+has(is("qh"), hand),
+has(is("jh"), hand),
+has(is("10h"), hand),
+has(is("9h"), hand),
+has(is("8h"), hand))
+&& hasQueenOfSpades(hand);
+} // hasChanceOfShootingTheMoon
+
 
 //alert("hearts module loaded");
