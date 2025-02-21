@@ -1,5 +1,8 @@
 export const faceCards = ["jack", "queen", "king", "ace"];
+export const jack = 11, queen = 12, king = 13, ace = 14;
+
 export const suitNames = ["clubs", "spades", "hearts", "diamonds"];
+export const clubs = 0, spades = 1, hearts = 2, diamonds = 3;
 
 export function createDeck () {
 return {
@@ -110,9 +113,26 @@ export function allCardsInSuit(suit, list) {
 return list.filter(card => card.suit === suit);
 } // allCardsInSuit
 
-export function has (card, hand) {
-return hand.find(c => isCard(card, c));
+export function has (card, list) {
+return list.find(c => isCard(card, c));
 } // has
+
+export function hasSuit (suit, list) {
+return list.filter(card => card.suit === suit);
+} // hasSuit
+
+export function hasRank (low, high, list) {
+return list.filter(card => card.rank >= low && card.rank <= high);
+} // hasRank
+
+export function hasRankInSuit (suit, low, high, list) {
+return hasRank(low, high, hasSuit(suit, list));
+} // hasRankInSuit
+
+export function hasSuitSize(suit, n, list) {
+return hasSuit(suit, list).length <= n;
+} // hasSuitSize
+
 
 export function isCard (card1, card2) {
 return card1.rank === card2.rank && card1.suit === card2.suit;
@@ -135,11 +155,11 @@ return list.sort(lowCardFirst)[0];
 } // findLowestCardInList
 
 export function findHighestCardInSuit(suit, list) {
-return list.filter(card => card.suit === suit).sort(highCardFirst)[0];
+return hasSuit(suit, list).sort(highCardFirst)[0];
 } // findHighestCardInSuit
 
 export function findLowestCardInSuit(suit, list) {
-return list.filter(card => card.suit === suit).sort(lowCardFirst)[0];
+return hasSuit(suit, list).sort(lowCardFirst)[0];
 } // findLowestCardInSuit
 
 export function highCardFirst (c1, c2) {
