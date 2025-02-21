@@ -246,8 +246,11 @@ return card? card : cards.findLowestCardInList(hand);
 // follow suit
 
 if (suit === spades ) {
-if (cardsInTrick(trick).filter(card => card.rank > queen)) return theQueen;
-else return cards.findLowestCardInList(cards.hasSuit(spades, hand));
+let card;
+const myOtherSpades = cards.hasSuit(spades, hand).filter(card => not(cards.isCard(card, theQueen)));
+if (cards.hasSuit(spades, cardsInTrick(trick)).filter(card => card.rank > queen)) return theQueen;
+else card = cards.findLowestCardInList(cards.hasSuit(spades, myOtherSpades));
+return card? card : theQueen;
 
 } else {
 const mySuit = cards.hasSuit(suit, hand);
