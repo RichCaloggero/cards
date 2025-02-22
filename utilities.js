@@ -1,3 +1,7 @@
+export function sum (a) {
+return a.reduce((a,x) => a += x, 0);
+} // sum
+
 export function userMessage (text) {
 dispatch("userMessage", {message: text});
 } // userMessage

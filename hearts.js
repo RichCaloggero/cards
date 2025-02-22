@@ -1,8 +1,10 @@
 // cheats
-var queenAlert = true;
+var queenAlert = true,
+showHand = true,
+showStrategy = true;
 
 import * as cards from "./cards.js";
-import { not, atLeast, userMessage, errorMessage, blockUntilEvent, dispatch } from "./utilities.js";
+import { not, sum, userMessage, errorMessage, blockUntilEvent, dispatch } from "./utilities.js";
 
 
 /// variables global to module
@@ -184,12 +186,19 @@ return "error: card not found in hand; this should not happen";
 /// strategies
 
 function chooseStrategy (hand, suit, trick) {
+const player = players.find(p => p.hand === hand);
+userMessage(`${player.name} has: ${displayCards(player.hand)}`);
+
 if (hasChanceOfShootingTheMoon(hand)) {
-userMessage("I don't know how to shoot the moon yet, so ducking instead.");
-return duckingStrategy;
+userMessage(`${player.name} is attempting to shoot the moon.`);
+return shootingStrategy;
 } else if (hasQueenOfSpades(hand)) {
+userMessage(`${player.name} is trying to get rid of the queen.`);
 return getRidOfQueenStrategy;
-} else return duckingStrategy;
+} else {
+userMessage(`${player.name} is ducking...`);
+return duckingStrategy;
+} // if
 } // chooseStrategy
 
 function executeStrategy (strategy, hand, suit, trick) {
@@ -224,7 +233,6 @@ return card;
 function getRidOfQueenStrategy (hand, suit, trick) {
 if (not(hasQueenOfSpades(hand))) return duckingStrategy(hand, suit, trick);
 
-
 const firstCardInTrick = suit < 0;
 const theQueen = cards.nameToCard("qs");
 
@@ -248,8 +256,8 @@ return card? card : cards.findLowestCardInList(hand);
 if (suit === spades ) {
 let card;
 const myOtherSpades = cards.hasSuit(spades, hand).filter(card => not(cards.isCard(card, theQueen)));
-if (cards.hasSuit(spades, cardsInTrick(trick)).filter(card => card.rank > queen)) return theQueen;
-else card = cards.findLowestCardInList(cards.hasSuit(spades, myOtherSpades));
+if (cards.hasSuit(spades, cardsInTrick(trick)).filter(card => card.rank > queen).length > 0) return theQueen;
+else card = cards.findLowestCardInList(myOtherSpades);
 return card? card : theQueen;
 
 } else {
@@ -261,7 +269,19 @@ return mySuit.length > 0? cards.findLowestCardInList(mySuit)
 } // getRidOfQueenStrategy
 
 function shootingStrategy (hand, suit, trick) {
-userMessage("I don't know how to shoot the moon yet.");
+const player = players.find(p => p.hand === hand);
+const allPoints = players.filter(player => calculatePointsThisRound(player));
+if (allPoints.length > 1 || allPoints[0] !== player) {
+player.strategy = duckingStrategy;
+return duckingStrategy(suit, hand, trick);
+} // if
+
+const highCardStraights = findHighCardStraights(hand);
+const mySpades = cards.hasSuit(spades, hand).filter(card => card.rank !== cards.queen);
+
+if (heartsBroken && highCardStraights[hearts].length > 0) return cards.findLowestCardInList(highStraights[hearts]);
+else if (mySpades.length > 0) return cards.findLowestCardInList(mySpades);
+
 } // shootingStrategy
 
 export function dealNewRound () {
@@ -293,13 +313,13 @@ const player = item.player;
 player.tricks.push(trick);
 
 const cards = cardsInTrick(trick);
-player.score += trickScore(cards);
+player.score += calculatePoints (cards);
 return player;
 } // assignTrick
 
-function trickScore (cards) {
+function calculatePoints (cards) {
 return cards.reduce((score, card) => score + cardScore(card), 0);
-} // trickScore
+} // calculatePoints
 
 function cardScore (card) {
 const hearts = cards.suitNames.indexOf("hearts");
@@ -360,6 +380,24 @@ if (e.command === "newRound") return;
 } // while
 } // userStartsRound
 
+function findHighCardStraights (hand) {
+return [0,1,2,3].map(suit => highCardStraight(suit, hand));
+} // findHighCardStraights
+
+function findHighCardStraight (suit, hand) {
+const all = cards.hasSuit(suit, hand).sort(cards.highCardFirst);
+if (all.length > 0 && all[0].rank === ace || all[0].rank === king) {
+let rank = all[0].rank;
+return all.filter(card => card.rank === rank--);
+} // if
+
+return [];
+} // findHighCardStraight
+
+function calculatePointsThisRound (player) {
+return sum(player.tricks.map(trick => calculatePoints(cardsInTrick(trick))));
+} // calculatePointsThisRound
+
 function hasQueenOfSpades (hand) {
 return cards.has(cards.nameToCard("qs"), hand);
 } // hasQueenOfSpades
@@ -375,8 +413,8 @@ return [0,1,2,3].filter(suit => cards.hasSuitSize(suit, maxSize, hand)).sort();
 
 function hasChanceOfShootingTheMoon (hand) {
 
-return cards.hasRank(9, 14, cards.hasSuit(hearts, hand))
-&& hand.filter(card => card.suit !== hearts && card.rank > 9) >= 4
+return cards.hasRank(10, 14, cards.hasSuit(hearts, hand)).length >= 5
+&& cards.hasRank(jack, ace, cards.hasSuit(spades, hand)).length >= 4
 && hasQueenOfSpades(hand);
 } // hasChanceOfShootingTheMoon
 
