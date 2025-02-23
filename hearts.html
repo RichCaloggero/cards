@@ -48,7 +48,7 @@ logMessage(`Trick complete; ${e.player.name} took ${hearts.displayCards(e.cards)
 displayScores(e.players);
 });
 
-document.addEventListener("userMessage", e => logMessage(e.message));
+document.addEventListener("userMessage", e => logMessage(e.message, e.options));
 document.addEventListener("error", e => logMessage(e.message));
 
 } // setupEventListeners
@@ -76,11 +76,25 @@ if (score > 0) logMessage(`Your score is ${score}.`);
 } // displayScore
 
 function clearLog () {document.querySelector("#log").innerHTML = "";}
-function logMessage (text, deleteContents) {
+function logMessage (text, options) {
 const $log = document.querySelector("#log");
-if (deleteContents) $log.innerHTML = "";
-$log.insertAdjacentHTML("beforeEnd", `<p>${text}</p>\n`);
+$log.querySelectorAll("[data-remove-later]").forEach(message => message.remove());
+
+$log.insertAdjacentHTML("beforeEnd", `<p ${options? processOptions(options) : ""}>${text}</p>\n`);
 } // logMessage
+
+function processOptions (... options) {
+console.log("options: ", options);
+
+return options.flat()
+.filter(x => typeof(x) !== "boolean" && typeof(x) !== "number")
+.map(x => typeof(x) === "string"? `data-${x}`
+: Object.entries(x).map(entry =>
+entry[1]? `data-${entry[0]}="${entry[1]}"`
+: `data-${entry[0]}`
+).join(" ")
+).join(" ");
+} // processOptions
 
 function statusMessage (text) {
 setTimeout(() => {

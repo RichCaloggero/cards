@@ -2,8 +2,8 @@ export function sum (a) {
 return a.reduce((a,x) => a += x, 0);
 } // sum
 
-export function userMessage (text) {
-dispatch("userMessage", {message: text});
+export function userMessage (text, options) {
+dispatch("userMessage", {message: text, options});
 } // userMessage
 
 export function errorMessage (text) {

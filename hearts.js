@@ -115,7 +115,7 @@ return card;
 } // playTurn
 
 export async function userCardPlayed (context) {
-userMessage("Your turn.");
+userMessage("Your turn.", ["remove-later"]);
 const e = await blockUntilEvent("userCardPlayed");
 return e.card;
 } // userCardPlayed
