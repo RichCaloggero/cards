@@ -163,7 +163,9 @@ if (player.hand.length === 0) return `${player.name} has no more cards`;
 /// checks on human player
 if (isHumanPlayer(player)) {
 if (isFirstCardInTrick) {
-if (card.suit === hearts && not(heartsBroken)) return "Hearts have not been broken; try again.";
+const onlyHearts = player.hand.every(card => card.suit === hearts);
+
+if (card.suit === hearts && not(onlyHearts) && not(heartsBroken)) return "Hearts have not been broken; try again.";
 
 } else {
 // follow suit
@@ -187,16 +189,16 @@ return "error: card not found in hand; this should not happen";
 
 function chooseStrategy (hand, suit, trick) {
 const player = players.find(p => p.hand === hand);
-userMessage(`${player.name} has: ${displayCards(player.hand)}`);
+if (showHand) userMessage(`${player.name} has: ${displayCards(player.hand)}`);
 
 if (hasChanceOfShootingTheMoon(hand)) {
-userMessage(`${player.name} is attempting to shoot the moon.`);
+if (showStrategy) userMessage(`${player.name} is attempting to shoot the moon.`);
 return shootingStrategy;
 } else if (hasQueenOfSpades(hand)) {
-userMessage(`${player.name} is trying to get rid of the queen.`);
+if (showStrategy) userMessage(`${player.name} is trying to get rid of the queen.`);
 return getRidOfQueenStrategy;
 } else {
-userMessage(`${player.name} is ducking...`);
+if (showStrategy) userMessage(`${player.name} is ducking...`);
 return duckingStrategy;
 } // if
 } // chooseStrategy
@@ -231,41 +233,56 @@ return card;
 } // duckingStrategy
 
 function getRidOfQueenStrategy (hand, suit, trick) {
-if (not(hasQueenOfSpades(hand))) return duckingStrategy(hand, suit, trick);
+console.log("getRidOfQueenStrategy:");
+const player = players.find(p => p.hand === hand);
+if (not(hasQueenOfSpades(hand))) {
+player.strategy = duckingStrategy;
+return duckingStrategy(hand, suit, trick);
+} // if
 
-const firstCardInTrick = suit < 0;
+const myHand = organizeBySuit(hand);
+const [myClubs, mySpades, myHearts, myDiamonds] = myHand;
+const myOtherSpades = mySpades.filter(card => card.rank !== queen);
+const onlyHearts = hand.every(card => card.suit === hearts);
+const onlySpades = hand.every(card => card.suit === spades);
+
+const firstCardInTrick = trick.length === 0;
 const theQueen = cards.nameToCard("qs");
 
 if (firstCardInTrick) {
-const shortSuits = heartsBroken?
-hasShortSuit(hand).filter(suit => suit !== spades)
-: hasShortSuit(hand).filter(suit => suit !== hearts && suit !== spades);
+console.log("- firstCardInTrick");
+debugger;
+if (onlyHearts) return cards.findLowestCardInList(myHearts);
+if (onlySpades) return cards.findLowestCardInList(myOtherSpades.length > 0? myOtherSpades : mySpades);
 
-const card = shortSuits.length > 0?
-cards.findLowestCardInSuit(shortSuits[0], hand)
-: cards.findLowestCardInList(
-hand.filter(card => card.suit !== spades)
-.filter(card => heartsBroken? card : card.suit !== hearts)
-);
+const list = heartsBroken?
+shortestList(myHearts, myClubs, myDiamonds)[0]
+: shortestList(myClubs, myDiamonds)[0];
 
-return card? card : cards.findLowestCardInList(hand);
+return list.length > 0? cards.findHighestCardInList(list) : cards.findHighestCardInList(hand);
 
 } else {
 // follow suit
 
 if (suit === spades ) {
+console.log("- follow suit in spades");
+
 let card;
-const myOtherSpades = cards.hasSuit(spades, hand).filter(card => not(cards.isCard(card, theQueen)));
 if (cards.hasSuit(spades, cardsInTrick(trick)).filter(card => card.rank > queen).length > 0) return theQueen;
 else card = cards.findLowestCardInList(myOtherSpades);
 return card? card : theQueen;
 
 } else {
-const mySuit = cards.hasSuit(suit, hand);
-return mySuit.length > 0? cards.findLowestCardInList(mySuit)
+console.log("- follow suit: ", cards.suitNames[suit]);
+// suit not spades so maybe we can dump the queen
+const list = myHand[suit];
+return list.length > 0? cards.findHighestCardInList(list)
 : theQueen;
 } // if
 } // if
+
+console.log("this should never happen");
+debugger;
 } // getRidOfQueenStrategy
 
 function shootingStrategy (hand, suit, trick) {
@@ -379,6 +396,28 @@ console.log(e);
 if (e.command === "newRound") return;
 } // while
 } // userStartsRound
+
+function organizeBySuit (list) {
+return [0,1,2,3].map(suit => list.filter(card => card.suit === suit));
+} // organizeBySuit
+
+function orderBySuit (suits, order = shortestSuitFirst) {
+return suits.map((list, suit) => ({suit, list}))
+.sort(order);
+} // orderBySuit
+
+function shortestList (...lists) {
+return lists.sort((l1, l2) => l1.length <= l2.length? -1 : 1)
+.filter(l => l.length > 0);
+} // shortestList
+
+function shortestSuitFirst (s1, s2) {
+return s1.list.length <= s2.list.length? -1 : 1;
+} // shortestSuitFirst
+
+function longestSuitFirst (s1, s2) {
+return s1.list.length >= s2.list.length? -1 : 1;
+} // longestSuitFirst
 
 function findHighCardStraights (hand) {
 return [0,1,2,3].map(suit => highCardStraight(suit, hand));
