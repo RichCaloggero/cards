@@ -45,8 +45,18 @@ e.preventDefault();
 e.stopPropagation();
 e.stopImmediatePropagation();
 $hand.focus();
-if (e.ctrlKey) $startNewRound.click();
-else $hand.click();
+
+if (e.ctrlKey) {
+$startNewRound.click();
+} else if (e.shiftKey) {
+const currentTrick = $log.querySelector("#current-trick");
+const html = currentTrick.innerHTML;
+currentTrick.innerHTML = "";
+currentTrick.innerHTML = html;
+
+} else {
+$hand.click();
+} // if
 } // if
 }); // enter key clicks
 
@@ -60,8 +70,7 @@ $log.insertAdjacentHTML("beforeEnd", '<div id="current-trick">\n</div>\n');
 });
 
 document.addEventListener("trickComplete", e => {
-//$log.querySelector("#current-trick").hidden;
-$log.querySelector("[data-error]").remove();
+$log.querySelectorAll("[data-error]").forEach(x => x.remove());
 $log.querySelector("#current-trick").removeAttribute("id");
 });
 
