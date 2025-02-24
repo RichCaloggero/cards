@@ -56,18 +56,20 @@ displayHand(e.hand)
 });
 
 document.addEventListener("trickStart", e => {
-/*const separators = [...$log.("hr")].slice(0, -2);
-const element = separators[0].nextElementSibling;
-do {element.hidden = true;} while (element !== separators[1]);
-*/
+$log.insertAdjacentHTML("beforeEnd", '<div id="current-trick">\n</div>\n');
 });
 
 document.addEventListener("trickComplete", e => {
-logMessage(""); // separator
+//$log.querySelector("#current-trick").hidden;
+$log.querySelector("[data-error]").remove();
+$log.querySelector("#current-trick").removeAttribute("id");
 });
 
-document.addEventListener("userMessage", e => logMessage(e.message, e.options));
-document.addEventListener("error", e => logMessage(e.message));
+document.addEventListener("userMessage", e => {
+$log.querySelectorAll("[data-prompt]").forEach(x => x.remove());
+logMessage(e.message, e.options);
+});
+document.addEventListener("error", e => logMessage(e.message, e.options));
 } // setupEventListeners
 
 
@@ -93,11 +95,14 @@ if (score > 0) logMessage(`Your score is ${score}.`);
 } // displayScore
 
 function clearLog () {document.querySelector("#log").innerHTML = "";}
-function logMessage (text, options) {
-$log.querySelectorAll("[data-prompt]").forEach(message => message.remove());
+function logMessage (text, options = []) {
+const log = options.includes("trick")? $log.querySelector("#current-trick") : $log;
 
-if (text === "") $log.insertAdjacentHTML("beforeEnd", "<hr>\n");
-else $log.insertAdjacentHTML("beforeEnd", `<p ${options? processOptions(options) : ""}>${text}</p>\n`);
+const prompt = options.includes("prompt")? "data-prompt" : "";
+const error = options.includes("error")? "data-error" : "";
+
+log.insertAdjacentHTML("beforeEnd", `<p ${prompt} ${error}>${text}</p>\n`);
+if (options.includes("separator")) log.insertAdjacentHTML("beforeEnd", "<hr>\n");
 } // logMessage
 
 function processOptions (... options) {

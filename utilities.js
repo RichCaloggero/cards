@@ -7,7 +7,7 @@ dispatch("userMessage", {message: text, options});
 } // userMessage
 
 export function errorMessage (text) {
-dispatch("error", {message: text});
+dispatch("error", {message: text, options: ["error"]});
 } // errorMessage
 
 export function dispatch (type, options) {

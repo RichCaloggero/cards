@@ -60,9 +60,9 @@ while (not(roundComplete())) {
 dispatch("trickStart");
 trickWinner = await playTrick(trickWinner?.player);
 //console.log("trickWinner: ", trickWinner);
-userMessage(`${trickWinner.player.name} took ${displayTrick(trickWinner.trick)}.`, ["separator"]);
+userMessage(`${trickWinner.player.name} took ${displayTrick(trickWinner.trick)}.`, ["trick",  "separator"]);
 if (heartsBroken && heartsBroken !== "displayOnce") {
-userMessage("Hearts have been broken.");
+userMessage("Hearts have been broken.", ["trick"]);
 heartsBroken = "displayOnce";
 } // if
 
@@ -86,7 +86,7 @@ trick.push({player, card});
 isFirstTrickInRound = false;
 if (isHumanPlayer(player)) dispatch("updateHand", {hand: player.hand});
 
-userMessage(`${player.name} played ${cards.displayCard(card)}.`);
+userMessage(`${player.name} played ${cards.displayCard(card)}.`, ["trick"]);
 } // while
 
 const winner = assignTrick(trick);
