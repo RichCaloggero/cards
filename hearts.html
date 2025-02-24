@@ -4,25 +4,32 @@
 <title>Hearts</title>
 </head>
 <body>
+<div class="hand">
 <label>hand:
 <br><select autofocus id="hand"></select></label>
+</div>
+<br><button id="startNewRound">Start new round</button>
 
 <hr>
 <output id="log"></output>
-<div><output id="status"></output></div>
 
 <script type="module">
 import * as hearts from "./hearts.js";
 import * as cards from "./cards.js";
-import { dispatch } from "./utilities.js";
+import { not, dispatch } from "./utilities.js";
 
 const $hand = document.querySelector("#hand");
+const $log = document.querySelector("#log");
+const $startNewRound = document.querySelector("#startNewRound");
 
 /// start
 
 setupEventListeners();
 hearts.startNewGame(document);
 
+function startNewRound (e) {
+dispatch("userCommand", {command: "newRound", data: e});
+} // startNewRound
 
 function displayHand (hand) {
 fillSelectList($hand, hand);
@@ -30,11 +37,16 @@ fillSelectList($hand, hand);
 
 function setupEventListeners () {
 $hand.addEventListener("click", e => dispatch("userCardPlayed", {card: JSON.parse(e.target.selectedOptions[0].value)}));
+$startNewRound.addEventListener("click", startNewRound);
 
-$hand.addEventListener("keyup", e => {
+document.addEventListener("keyup", e => {
 if (e.key === "Enter") {
-if (e.ctrlKey) dispatch("userCommand", {command: "newRound", data: e});
-else e.target.click();
+e.preventDefault();
+e.stopPropagation();
+e.stopImmediatePropagation();
+$hand.focus();
+if (e.ctrlKey) $startNewRound.click();
+else $hand.click();
 } // if
 }); // enter key clicks
 
@@ -43,14 +55,19 @@ document.addEventListener("updateHand", e => {
 displayHand(e.hand)
 });
 
+document.addEventListener("trickStart", e => {
+/*const separators = [...$log.("hr")].slice(0, -2);
+const element = separators[0].nextElementSibling;
+do {element.hidden = true;} while (element !== separators[1]);
+*/
+});
+
 document.addEventListener("trickComplete", e => {
-logMessage(`Trick complete; ${e.player.name} took ${hearts.displayCards(e.cards)}`);
-displayScores(e.players);
+logMessage(""); // separator
 });
 
 document.addEventListener("userMessage", e => logMessage(e.message, e.options));
 document.addEventListener("error", e => logMessage(e.message));
-
 } // setupEventListeners
 
 
@@ -77,15 +94,13 @@ if (score > 0) logMessage(`Your score is ${score}.`);
 
 function clearLog () {document.querySelector("#log").innerHTML = "";}
 function logMessage (text, options) {
-const $log = document.querySelector("#log");
-$log.querySelectorAll("[data-remove-later]").forEach(message => message.remove());
+$log.querySelectorAll("[data-prompt]").forEach(message => message.remove());
 
-$log.insertAdjacentHTML("beforeEnd", `<p ${options? processOptions(options) : ""}>${text}</p>\n`);
+if (text === "") $log.insertAdjacentHTML("beforeEnd", "<hr>\n");
+else $log.insertAdjacentHTML("beforeEnd", `<p ${options? processOptions(options) : ""}>${text}</p>\n`);
 } // logMessage
 
 function processOptions (... options) {
-console.log("options: ", options);
-
 return options.flat()
 .filter(x => typeof(x) !== "boolean" && typeof(x) !== "number")
 .map(x => typeof(x) === "string"? `data-${x}`

@@ -1,7 +1,7 @@
-// cheats
-var queenAlert = true,
-showHand = true,
-showStrategy = true;
+/// debugging flags
+var queenAlert = false,
+showHand = false,
+showStrategy = false;
 
 import * as cards from "./cards.js";
 import { not, sum, userMessage, errorMessage, blockUntilEvent, dispatch } from "./utilities.js";
@@ -38,16 +38,16 @@ roundCount = 0;
 
 while (not(gameComplete())) {
 roundCount += 1;
-await playRound (roundCount);
+await playRound ();
 userMessage(displayScores(players));
 } // while
 } // playGame
 
-async function playRound (roundCount) {
+async function playRound () {
 await userStartsRound();
 heartsBroken = false;
 console.log("starting round ", roundCount);
-userMessage(`Starting round ${roundCount}.`);
+userMessage(`Starting round ${roundCount}.`, ["prompt"]);
 dealNewRound();
 dispatch("updateHand", {hand: players[0].hand});
 if (queenAlert) userMessage(`${players.find(player => hasQueenOfSpades(player.hand)).name} has the queen!`);
@@ -57,13 +57,20 @@ players.forEach(player => player.strategy = null);
 
 let trickWinner = null;
 while (not(roundComplete())) {
+dispatch("trickStart");
 trickWinner = await playTrick(trickWinner?.player);
 //console.log("trickWinner: ", trickWinner);
-userMessage(`${trickWinner.player.name} took ${displayTrick(trickWinner.trick)}.`);
-if (heartsBroken) userMessage("Hearts have been broken.");
+userMessage(`${trickWinner.player.name} took ${displayTrick(trickWinner.trick)}.`, ["separator"]);
+if (heartsBroken && heartsBroken !== "displayOnce") {
+userMessage("Hearts have been broken.");
+heartsBroken = "displayOnce";
+} // if
+
+dispatch("trickComplete");
 } // while roundNotComplete()
 
 userMessage(`End of round ${roundCount}.`);
+dispatch("roundComplete");
 } // playRound
 
 
@@ -115,7 +122,7 @@ return card;
 } // playTurn
 
 export async function userCardPlayed (context) {
-userMessage("Your turn.", ["remove-later"]);
+userMessage("Your turn.", ["prompt"]);
 const e = await blockUntilEvent("userCardPlayed");
 return e.card;
 } // userCardPlayed
@@ -376,8 +383,7 @@ return players[0].hand.length === 0;
 } // roundComplete
 
 function highestScore () {
-return players.map(p => p.score)
-.reduce((score, player) => score = player.score > score? player.score : score, 0)
+return Math.max(...players.map(p => p.score));
 } // highestScore
 
 function displayScores (players) {
@@ -389,7 +395,7 @@ return "<pre>\n"
 
 
 export async function userStartsRound () {
-setTimeout(() => userMessage("Press control+enter to start a new round."), 200);
+setTimeout(() => userMessage("Press control+enter to start a new round.", ["prompt"]), 200);
 let e;
 while (e = await blockUntilEvent("userCommand")) {
 console.log(e);
