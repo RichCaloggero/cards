@@ -4,7 +4,9 @@ showHand = false,
 showStrategy = false;
 
 import * as cards from "./cards.js";
-import { not, sum, userMessage, errorMessage, blockUntilEvent, dispatch } from "./utilities.js";
+import { not, sum, blockUntilEvent, dispatch } from "./utilities.js";
+import { userMessage, errorMessage } from "./log.js";
+import * as log from "./log.js";
 
 
 /// variables global to module
@@ -22,7 +24,7 @@ let heartsBroken = false;
 let roundCount = 0;
 
 export function startNewGame () {
-//console.log("starting game...");
+console.log("starting game...");
 
 for (const player of players) {
 player.score = 0;
@@ -31,7 +33,6 @@ player.tricks = [];
 } // for
 
 playGame();
-dispatch("gameComplete", {score: displayFinalScores()});
 } // startNewGame
 
 async function playGame () {
@@ -42,13 +43,15 @@ roundCount += 1;
 await playRound ();
 userMessage(displayScores(players));
 } // while
+
+userMessage(`Game complete.\n${displayFinalScores()}`);
 } // playGame
 
 async function playRound () {
 await userStartsRound();
 heartsBroken = false;
 //console.log("starting round ", roundCount);
-userMessage(`Starting round ${roundCount}.`, ["info"]);
+userMessage(`Starting round ${roundCount}.`);
 dealNewRound();
 dispatch("updateHand", {hand: players[0].hand});
 if (queenAlert) userMessage(`${players.find(player => hasQueenOfSpades(player.hand)).name} has the queen!`);
@@ -59,17 +62,17 @@ players.forEach(player => player.strategy = null);
 let trickWinner = null;
 while (not(roundComplete())) {
 console.log("trick start:");
-dispatch("trickStart");
+log.trickStart();
 trickWinner = await playTrick(trickWinner?.player);
 console.log("trickWinner: ", trickWinner);
-userMessage(`${trickWinner.player.name} took ${displayTrick(trickWinner.trick)}.`, ["trick"]);
+log.currentTrick(`${trickWinner.player.name} took ${displayTrick(trickWinner.trick)}.`);
 if (heartsBroken && heartsBroken !== "displayOnce") {
-userMessage("Hearts have been broken.", ["trick"]);
+log.currentTrick("Hearts have been broken.");
 heartsBroken = "displayOnce";
 } // if
 
 console.log("trick complete.");
-dispatch("trickComplete");
+log.trickComplete();
 } // while roundNotComplete()
 
 userMessage(`End of round ${roundCount}.`);
@@ -89,7 +92,7 @@ trick.push({player, card});
 isFirstTrickInRound = false;
 if (isHumanPlayer(player)) dispatch("updateHand", {hand: player.hand});
 
-userMessage(`${player.name} played ${cards.displayCard(card)}.`, ["trick"]);
+log.currentTrick(`${player.name} played ${cards.displayCard(card)}.`);
 } // while
 
 const winner = assignTrick(trick);
@@ -125,7 +128,7 @@ return card;
 } // playTurn
 
 export async function userCardPlayed (context) {
-userMessage("Your turn.", ["prompt", "trick"]);
+setTimeout(() => log.prompt("Your turn."), 200);
 const e = await blockUntilEvent("userCardPlayed");
 return e.card;
 } // userCardPlayed
@@ -407,7 +410,8 @@ ${players.sort((p1, p2) => p1.score < p2.score? -1 : 1)
 
 
 export async function userStartsRound () {
-setTimeout(() => userMessage("Press control+enter to start a new round.", ["prompt"]), 200);
+console.log("userStartsRound:");
+setTimeout(() => log.prompt("Press control+enter to start a new round."), 200);
 let e;
 while (e = await blockUntilEvent("userCommand")) {
 //console.log(e);

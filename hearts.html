@@ -23,15 +23,15 @@
 import * as hearts from "./hearts.js";
 import * as cards from "./cards.js";
 import { not, dispatch } from "./utilities.js";
+import * as log from "./log.js";
 
 const $hand = document.querySelector("#hand");
-const $log = document.querySelector("#log");
 const $startNewRound = document.querySelector("#startNewRound");
 
 /// start
-
+log.initialize(document.querySelector("#log"));
 setupEventListeners();
-hearts.startNewGame(document);
+hearts.startNewGame();
 
 function startNewRound (e) {
 dispatch("userCommand", {command: "newRound", data: e});
@@ -55,10 +55,7 @@ $hand.focus();
 if (e.ctrlKey) {
 $startNewRound.click();
 } else if (e.shiftKey) {
-const currentTrick = $log.querySelector("#current-trick");
-const html = currentTrick.innerHTML;
-currentTrick.innerHTML = "";
-currentTrick.innerHTML = html;
+log.refreshCurrentTrick();
 
 } else {
 $hand.click();
@@ -72,28 +69,14 @@ displayHand(e.hand)
 });
 
 document.addEventListener("trickStart", e => {
-$log.insertAdjacentHTML("beforeEnd", '<div id="current-trick">\n</div>\n');
 });
 
 document.addEventListener("trickComplete", e => {
-const currentTrick = $log.querySelector("#current-trick");
-currentTrick.removeAttribute("id");
-currentTrick.insertAdjacentHTML("beforeEnd", "<hr>\n");
-$log.querySelectorAll("[data-error]").forEach(x => x.remove());
 });
 
 document.addEventListener("gameComplete", e => {
-logMessage(e.score);
-hearts.startNewGame();
 });
-
-document.addEventListener("userMessage", e => {
-$log.querySelectorAll("[data-prompt]").forEach(x => x.remove());
-logMessage(e.message, e.options);
-});
-document.addEventListener("error", e => logMessage(e.message, e.options));
 } // setupEventListeners
-
 
 function fillSelectList($list, items) {
 $list.innerHTML = "";
@@ -116,17 +99,6 @@ function displayYourScore (score) {
 if (score > 0) logMessage(`Your score is ${score}.`);
 } // displayScore
 
-function clearLog () {document.querySelector("#log").innerHTML = "";}
-function logMessage (text, options = []) {
-const log = options.includes("trick")? $log.querySelector("#current-trick") : $log;
-
-const prompt = options.includes("prompt")? "data-prompt" : "";
-const info = options.includes("info")? "data-info" : "";
-
-log.insertAdjacentHTML("beforeEnd", `<p ${prompt} ${info}>${text}</p>\n`);
-if (options.includes("separator")) log.insertAdjacentHTML("beforeEnd", "<hr>\n");
-} // logMessage
-
 function processOptions (... options) {
 return options.flat()
 .filter(x => typeof(x) !== "boolean" && typeof(x) !== "number")
@@ -137,12 +109,6 @@ entry[1]? `data-${entry[0]}="${entry[1]}"`
 ).join(" ")
 ).join(" ");
 } // processOptions
-
-function statusMessage (text) {
-setTimeout(() => {
-document.querySelector("#status").textContent = text;
-}, 50);
-} // statusMessage
 
 //alert("main module loaded");
 
