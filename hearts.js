@@ -22,7 +22,7 @@ let heartsBroken = false;
 let roundCount = 0;
 
 export function startNewGame () {
-console.log("starting game...");
+//console.log("starting game...");
 
 for (const player of players) {
 player.score = 0;
@@ -31,6 +31,7 @@ player.tricks = [];
 } // for
 
 playGame();
+dispatch("gameComplete", {score: displayFinalScores()});
 } // startNewGame
 
 async function playGame () {
@@ -46,8 +47,8 @@ userMessage(displayScores(players));
 async function playRound () {
 await userStartsRound();
 heartsBroken = false;
-console.log("starting round ", roundCount);
-userMessage(`Starting round ${roundCount}.`, ["prompt"]);
+//console.log("starting round ", roundCount);
+userMessage(`Starting round ${roundCount}.`, ["info"]);
 dealNewRound();
 dispatch("updateHand", {hand: players[0].hand});
 if (queenAlert) userMessage(`${players.find(player => hasQueenOfSpades(player.hand)).name} has the queen!`);
@@ -57,15 +58,17 @@ players.forEach(player => player.strategy = null);
 
 let trickWinner = null;
 while (not(roundComplete())) {
+console.log("trick start:");
 dispatch("trickStart");
 trickWinner = await playTrick(trickWinner?.player);
-//console.log("trickWinner: ", trickWinner);
-userMessage(`${trickWinner.player.name} took ${displayTrick(trickWinner.trick)}.`, ["trick",  "separator"]);
+console.log("trickWinner: ", trickWinner);
+userMessage(`${trickWinner.player.name} took ${displayTrick(trickWinner.trick)}.`, ["trick"]);
 if (heartsBroken && heartsBroken !== "displayOnce") {
 userMessage("Hearts have been broken.", ["trick"]);
 heartsBroken = "displayOnce";
 } // if
 
+console.log("trick complete.");
 dispatch("trickComplete");
 } // while roundNotComplete()
 
@@ -77,7 +80,7 @@ dispatch("roundComplete");
 async function playTrick (startingPlayer) {
 let isFirstTrickInRound = not(startingPlayer);
 const playerOrder = trickOrder(isFirstTrickInRound? indexOfPlayerHoldingTwoOfClubs() : players.indexOf(startingPlayer));
-console.log("trick order is ", playerOrder.map(p => p.name).join(", "));
+//console.log("trick order is ", playerOrder.map(p => p.name).join(", "));
 
 let player = null, trick = [];
 for (player of playerOrder) {
@@ -107,7 +110,7 @@ card = cards.nameToCard("2c");
 card = isHumanPlayer(player)? await userCardPlayed()
 : selectCard(player, suit, trick);
 } // if
-console.log(`player ${player.name} selected ${cards.displayCard(card)}`);
+//console.log(`player ${player.name} selected ${cards.displayCard(card)}`);
 
 error = playCard(card, suit, player);
 //console.log("- card played: ", card, ", by ", player.name, ", error = ", error);
@@ -122,7 +125,7 @@ return card;
 } // playTurn
 
 export async function userCardPlayed (context) {
-userMessage("Your turn.", ["prompt"]);
+userMessage("Your turn.", ["prompt", "trick"]);
 const e = await blockUntilEvent("userCardPlayed");
 return e.card;
 } // userCardPlayed
@@ -148,7 +151,7 @@ return order;
 function selectCard (player, suit, trick) {
 if (isHumanPlayer(player)) {
 userMessage("this should never be called with human player!");
-console.log("this should never be called with human player: ", player);
+//console.log("this should never be called with human player: ", player);
 return null;
 } // if
 
@@ -240,7 +243,7 @@ return card;
 } // duckingStrategy
 
 function getRidOfQueenStrategy (hand, suit, trick) {
-console.log("getRidOfQueenStrategy:");
+//console.log("getRidOfQueenStrategy:");
 const player = players.find(p => p.hand === hand);
 if (not(hasQueenOfSpades(hand))) {
 player.strategy = duckingStrategy;
@@ -257,7 +260,7 @@ const firstCardInTrick = trick.length === 0;
 const theQueen = cards.nameToCard("qs");
 
 if (firstCardInTrick) {
-console.log("- firstCardInTrick");
+//console.log("- firstCardInTrick");
 debugger;
 if (onlyHearts) return cards.findLowestCardInList(myHearts);
 if (onlySpades) return cards.findLowestCardInList(myOtherSpades.length > 0? myOtherSpades : mySpades);
@@ -272,7 +275,7 @@ return list.length > 0? cards.findHighestCardInList(list) : cards.findHighestCar
 // follow suit
 
 if (suit === spades ) {
-console.log("- follow suit in spades");
+//console.log("- follow suit in spades");
 
 let card;
 if (cards.hasSuit(spades, cardsInTrick(trick)).filter(card => card.rank > queen).length > 0) return theQueen;
@@ -280,7 +283,7 @@ else card = cards.findLowestCardInList(myOtherSpades);
 return card? card : theQueen;
 
 } else {
-console.log("- follow suit: ", cards.suitNames[suit]);
+//console.log("- follow suit: ", cards.suitNames[suit]);
 // suit not spades so maybe we can dump the queen
 const list = myHand[suit];
 return list.length > 0? cards.findHighestCardInList(list)
@@ -288,7 +291,7 @@ return list.length > 0? cards.findHighestCardInList(list)
 } // if
 } // if
 
-console.log("this should never happen");
+//console.log("this should never happen");
 debugger;
 } // getRidOfQueenStrategy
 
@@ -392,13 +395,22 @@ return "<pre>\n"
 + "</pre>\n";
 } // displayScores
 
+function displayFinalScores (players) {
+return `<h2>Final Scores</h2\n
+<pre>
+${players.sort((p1, p2) => p1.score < p2.score? -1 : 1)
+.map(p => `${p.name}: ${p.score}`)
+.join("\n")
+}</pre>
+`;
+} // displayFinalScores
 
 
 export async function userStartsRound () {
 setTimeout(() => userMessage("Press control+enter to start a new round.", ["prompt"]), 200);
 let e;
 while (e = await blockUntilEvent("userCommand")) {
-console.log(e);
+//console.log(e);
 if (e.command === "newRound") return;
 } // while
 } // userStartsRound

@@ -4,9 +4,15 @@
 <title>Hearts</title>
 </head>
 <body>
+<h1>Hearts</h1>
+
+<p>Welcome to hearts></p>
+<p><button popovertarget="rules" accesskey="r">Click this button to read the rules of the game.</button></p>
+<p>Press control+enter to begin a round, press enter to play a card, press shift+enter to repeat the cards played so far in the current trick.</p>
+
 <div class="hand">
 <label>hand:
-<br><select autofocus id="hand"></select></label>
+<br><select autofocus id="hand" accesskey="h"></select></label>
 </div>
 <br><button id="startNewRound">Start new round</button>
 
@@ -70,8 +76,15 @@ $log.insertAdjacentHTML("beforeEnd", '<div id="current-trick">\n</div>\n');
 });
 
 document.addEventListener("trickComplete", e => {
+const currentTrick = $log.querySelector("#current-trick");
+currentTrick.removeAttribute("id");
+currentTrick.insertAdjacentHTML("beforeEnd", "<hr>\n");
 $log.querySelectorAll("[data-error]").forEach(x => x.remove());
-$log.querySelector("#current-trick").removeAttribute("id");
+});
+
+document.addEventListener("gameComplete", e => {
+logMessage(e.score);
+hearts.startNewGame();
 });
 
 document.addEventListener("userMessage", e => {
@@ -108,9 +121,9 @@ function logMessage (text, options = []) {
 const log = options.includes("trick")? $log.querySelector("#current-trick") : $log;
 
 const prompt = options.includes("prompt")? "data-prompt" : "";
-const error = options.includes("error")? "data-error" : "";
+const info = options.includes("info")? "data-info" : "";
 
-log.insertAdjacentHTML("beforeEnd", `<p ${prompt} ${error}>${text}</p>\n`);
+log.insertAdjacentHTML("beforeEnd", `<p ${prompt} ${info}>${text}</p>\n`);
 if (options.includes("separator")) log.insertAdjacentHTML("beforeEnd", "<hr>\n");
 } // logMessage
 
@@ -134,6 +147,26 @@ document.querySelector("#status").textContent = text;
 //alert("main module loaded");
 
 </script>
+
+<dialog popover id="rules">
+<h1 id="hearts">Hearts</h1>
+<p>Hearts is a trick taking game played with four players. Each player is dealt 13 cards. Each round begins with the player who holds the two of clubs. Play proceeds in a clockwise fashion till all four players have played a card.</p>
+<p>Each block of four cards is called a trick. The player who played the first card in the trick defines the suit for that trick. Each player in turn must play a card in that suit. Highest card in the trick wins the trick.  If a player does not have a card of the indicated suit, the player may throw any other card from her hand into the trick, but that card's rank will not count towards winning the trick.</p>
+<p>The first card in a trick must not be a heart, unless a heart has already been played in response to another trick, i.e. hearts may not be lead until hearts have been broken. Hearts may only be broken if a player cannot follow the suit played by the trick leader.</p>
+<h2 id="objective">Objective</h2>
+<p>The objective of the game is to accrue the fewest points. The game ends when at least one player's score reaches or exceeds 100 points.</p>
+<h2 id="how-to-score">How to score</h2>
+<p>When a trick is taken, the player adds the points in the trick to her score. Points are scored as follows:</p>
+<ul>
+<li>hearts are worth 1 point</li>
+<li>queen of spades is worth 13 points</li>
+<li>if a player takes all 13 hearts and the queen of spades, they "shoot the moon", and they either subtract 26 points from their score, or add 26 points to everyone else's score, whichever they choose</li>
+</ul>
+
+<div class="actions">
+<button class="close">Close</button>
+</div>
+</dialog>
 
 </body>
 </html>

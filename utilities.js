@@ -7,8 +7,10 @@ dispatch("userMessage", {message: text, options});
 } // userMessage
 
 export function errorMessage (text) {
-dispatch("error", {message: text, options: ["error"]});
+dispatch("error", {message: text, options: ["info"]});
 } // errorMessage
+
+export function infoMessage (text) {return errorMessage(text);}
 
 export function dispatch (type, options) {
 const event = Object.assign(new Event(type), options);
