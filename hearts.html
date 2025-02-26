@@ -2,9 +2,15 @@
 <html lang="en">
 <head>
 <title>Hearts</title>
+
+<style>
+#log {position: fixed; bottom: 0%; left: 0%;}
+#status: {position: fixed; top: 0%; left: 0%; height: 3em;}
+</style>
 </head>
 <body>
 <h1>Hearts</h1>
+<div role="status"  id="status"></div>
 
 <p>Welcome to hearts></p>
 <p><button popovertarget="rules" accesskey="r">Click this button to read the rules of the game.</button></p>
@@ -17,7 +23,7 @@
 <br><button id="startNewRound">Start new round</button>
 
 <hr>
-<output id="log"></output>
+<div role="log" id="log"></div>
 
 <script type="module">
 import * as hearts from "./hearts.js";
@@ -29,7 +35,7 @@ const $hand = document.querySelector("#hand");
 const $startNewRound = document.querySelector("#startNewRound");
 
 /// start
-log.initialize(document.querySelector("#log"));
+log.initialize(document.querySelector("#log"), document.querySelector("#status"));
 setupEventListeners();
 hearts.startNewGame();
 
@@ -68,11 +74,12 @@ document.addEventListener("updateHand", e => {
 displayHand(e.hand)
 });
 
-document.addEventListener("trickStart", e => {
+/*document.addEventListener("trickStart", e => {
 });
 
 document.addEventListener("trickComplete", e => {
 });
+*/
 
 document.addEventListener("gameComplete", e => {
 });
@@ -130,7 +137,7 @@ entry[1]? `data-${entry[0]}="${entry[1]}"`
 </ul>
 
 <div class="actions">
-<button class="close">Close</button>
+<button class="close" popovertarget="rules" popovertargetaction="hide">Close</button>
 </div>
 </dialog>
 

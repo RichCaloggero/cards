@@ -1,7 +1,9 @@
 var $log = null;
+var $status = null;
 
-export function initialize (domElement) {
-$log = domElement;
+export function initialize (log, status = log) {
+$log = log;
+$status = status;
 } // initialize
 
 export function clear () {
@@ -9,26 +11,30 @@ $log.innerHTML = "";
 } // clear
 
 export function trickStart () {
-$log.querySelectorAll("#current-trick").forEach(x => x.removeAttribute("id"));
+//$log.querySelectorAll("#current-trick").forEach(x => x.removeAttribute("id"));
 $log.querySelectorAll("[data-error]").forEach(x => x.remove());
-$log.insertAdjacentHTML("beforeEnd", `<div id="current-trick">\n</div>\n`);
+console.debug("log.trickStart:");
+//$log.insertAdjacentHTML("beforeEnd", `<div id="current-trick">\n</div>\n`);
 } // trickStart
 
 export function trickComplete () {
+$log.insertAdjacentHTML("beforeEnd", "<hr>\n");
 } // trickComplete
 
 export function currentTrick (text) {
-const log = $log.querySelector("#current-trick");
-if (log) userMessage(text);
+console.debug("log.currentTrick: ", text);
+/*const log = $log.querySelector("#current-trick");
+if (log) log.insertAdjacentHTML("beforeEnd", `<p>${text}</p>`);
 else errorMessage("no current trick!");
+*/
+logMessage(text);
 } // currentTrick
 
 export function refreshCurrentTrick () {
+return;
 const log = $log.querySelector("#current-trick");
 if (log) {
-const html = log.innerHTML;
- log.innerHTML = "";
-log.innerHTML = html;
+log.innerHTML = log.innerHTML;
 
 } else {
 errorMessage("no current trick!");
@@ -36,18 +42,19 @@ errorMessage("no current trick!");
 } // refreshCurrentTrick
 
 export function prompt (text) {
-$log.querySelectorAll("[data-prompt]").forEach(x => x.remove());
-$log.insertAdjacentHTML("beforeEnd", `<p data-prompt>${text}</p>`);
+console.debug("log.prompt: " + text);
+logMessage(`<p data-prompt>${text}</p>`);
 } // prompt
 
-
-export function errorMessage (text, data) {
-$log.insertAdjacentHTML("beforeEnd", `<p data-error>${text}</p>`);
+export function errorMessage (text) {
+logMessage(`<p data-error>${text}</p>`);
 } // errorMessage
 
-export function userMessage (text) {
-$log.insertAdjacentHTML("beforeEnd", `<p>${text}</p>`);
-} // userMessage
+export function logMessage (html) {
+html = html.trim();
+if (html[0] !== "<") html = `<p>${html}</p>\n`;
+$log.insertAdjacentHTML("beforeEnd", html);
+} // logMessage
 
 
 export function infoMessage (text) {return errorMessage(text);}

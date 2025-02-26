@@ -83,7 +83,7 @@ return result;
 } // dealCards
 
 export function createHand (dealer, count) {
-hand = [
+const hand = [
 [], // clubs
 [], // spades
 [], // hearts
