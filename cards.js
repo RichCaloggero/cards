@@ -39,7 +39,7 @@ cards.push(createCard(rank, suit));
 return cards;
 } // createCards
 
-function createCard (rank, suit) {
+export function createCard (rank, suit) {
 return {rank, suit};
 } // createCard
 

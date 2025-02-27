@@ -12,8 +12,8 @@ $log.innerHTML = "";
 
 export function trickStart () {
 //$log.querySelectorAll("#current-trick").forEach(x => x.removeAttribute("id"));
-$log.querySelectorAll("[data-error]").forEach(x => x.remove());
-console.debug("log.trickStart:");
+$log.querySelectorAll("[data-error], [data-prompt]").forEach(x => x.remove());
+//console.debug("log.trickStart:");
 //$log.insertAdjacentHTML("beforeEnd", `<div id="current-trick">\n</div>\n`);
 } // trickStart
 
@@ -22,7 +22,7 @@ $log.insertAdjacentHTML("beforeEnd", "<hr>\n");
 } // trickComplete
 
 export function currentTrick (text) {
-console.debug("log.currentTrick: ", text);
+//console.debug("log.currentTrick: ", text);
 /*const log = $log.querySelector("#current-trick");
 if (log) log.insertAdjacentHTML("beforeEnd", `<p>${text}</p>`);
 else errorMessage("no current trick!");
@@ -42,7 +42,7 @@ errorMessage("no current trick!");
 } // refreshCurrentTrick
 
 export function prompt (text) {
-console.debug("log.prompt: " + text);
+//console.debug("log.prompt: " + text);
 logMessage(`<p data-prompt>${text}</p>`);
 } // prompt
 

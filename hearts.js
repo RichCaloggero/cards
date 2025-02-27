@@ -12,6 +12,7 @@ import * as log from "./log.js";
 /// variables global to module
 const clubs = cards.clubs, spades = cards.spades, hearts = cards.hearts, diamonds = cards.diamonds;
 const jack = cards.jack, queen = cards.queen, king = cards.king, ace = cards.ace;
+const queenOfSpades = cards.createCard(queen, spades);
 
 const deck = cards.createDeck();
 export const players= [
@@ -64,15 +65,15 @@ players.forEach(player => player.strategy = null);
 let trickWinner = null;
 while (not(roundComplete())) {
 //console.log("trick start:");
-console.debug("hearts.trickStart...");
+//console.debug("hearts.trickStart...");
 log.trickStart();
 trickWinner = await playTrick(trickWinner?.player);
 //console.log("trickWinner: ", trickWinner);
 
-console.debug("hearts: ", trickWinner.player.name, " took...");
+//console.debug("hearts: ", trickWinner.player.name, " took...");
 log.currentTrick(`${trickWinner.player.name} took ${displayTrick(trickWinner.trick)}.`);
 if (heartsBroken && heartsBroken !== "displayOnce") {
-console.debug("hearts.hearts broken...");
+//console.debug("hearts.hearts broken...");
 log.currentTrick("Hearts have been broken.");
 heartsBroken = "displayOnce";
 } // if
@@ -95,7 +96,7 @@ let player = null, trick = [];
 for (player of playerOrder) {
 const card = await playTurn(player, trick, isFirstTrickInRound);
 trick.push({player, card});
-console.debug(`hearts: player.name} played ${cards.displayCard(card)}.`);
+//console.debug(`hearts: player.name} played ${cards.displayCard(card)}.`);
 log.currentTrick(`<p ${isFirstTrickInRound? "data-trickStart" : ""}>${player.name} played ${cards.displayCard(card)}.</p>`);
 
 isFirstTrickInRound = false;
@@ -127,7 +128,11 @@ error = playCard(card, suit, player);
 
 if (error) {
 errorMessage(error);
-if (not(isHumanPlayer(player))) throw new Error(`AI error: ${error}`);
+if (not(isHumanPlayer(player))) {
+//console.log(`AI error: ${error}`);
+debugger;
+} // if
+
 } // if
 } while (error && isHumanPlayer(player));
 
@@ -136,7 +141,7 @@ return card;
 
 export async function userCardPlayed (context) {
 setTimeout(() => {
-console.debug("hearts.your turn");
+//console.debug("hearts.your turn");
 log.prompt("Your turn.");
 }, 400);
 const e = await blockUntilEvent("userCardPlayed");
@@ -203,7 +208,7 @@ if (index >= 0) {
 player.hand.splice(index, 1)[0];
 return "";
 } else {
-return "error: card not found in hand; this should not happen";
+return "error: card ${displayCard(card)} not found in hand; this should not happen";
 } // if
 } // playCard
 
@@ -256,15 +261,26 @@ return card;
 } // duckingStrategy
 
 function getRidOfQueenStrategy (hand, suit, trick) {
+/* Strategy
+- never lead a spade unless it's the only suit
+- only lead the queen if it's the only card you have left
+- dump queen if you have no members of the lead suit
+- dump queen if a higher spade has already been played on current trick
+- throw away cards in your shortest suit in order to create a way to dump the queen
+- prefer to keep higher cards in order to lead tricks so you have more control over what cards you play
+*/
+
+
 //console.log("getRidOfQueenStrategy:");
 const player = players.find(p => p.hand === hand);
 if (not(hasQueenOfSpades(hand))) {
 player.strategy = duckingStrategy;
 return duckingStrategy(hand, suit, trick);
 } // if
+if (hand.length === 1 && cards.isCard(hand[0], theQueen)) return theQueen;
 
 const myHand = organizeBySuit(hand);
-const mySuits = shortestList(...myHand).filter(list => list.length > 0);
+const mySuits = shortestList(...myHand);
 const [myClubs, mySpades, myHearts, myDiamonds] = myHand;
 const myOtherSpades = mySpades.filter(card => card.rank !== queen);
 const onlyHearts = hand.every(card => card.suit === hearts);
@@ -275,34 +291,37 @@ const theQueen = cards.nameToCard("qs");
 
 if (firstCardInTrick) {
 //console.log("- firstCardInTrick");
-if (onlyHearts) return cards.findLowestCardInList(myHearts);
-if (onlySpades) return cards.findLowestCardInList(myOtherSpades.length > 0? myOtherSpades : mySpades);
+if (onlySpades) return cards.findHighestCardInList(myOtherSpades);
+if (heartsBroken) return cards.findHighestCardInList(shortestList(myHearts, myClubs, myDiamonds)[0]);
+if (myClubs.length > 0 || myDiamonds.length > 0) return cards.findHighestCardInList(shortestList(myClubs, myDiamonds)[0]);
 
-const list = heartsBroken?
-mySuits[0]
-: (mySuits[0][0].suit === hearts? mySuits[1] : mySuits[0]);
+// hearts not broken and only hearts and spades left
+if (myOtherSpades.length > 0) return cards.findHighestCardInList(myOtherSpades);
 
-return findHighestCardInList(list);
+// no other choice
+return theQueen;
+
 
 } else {
 // follow suit
-const list = myHand[suit];
+let list = myHand[suit];
 
 if (list.length === 0) return theQueen;
-else if (suit !== spades) return cards.findHighestCardInList(list);
+else if (suit === clubs || suit === diamonds) return cards.findHighestCardInList(list);
+else if (suit === hearts) return cards.findLowestCardInList(list);
 
 // suit is spades
 //console.log("- follow suit in spades");
 
 let card;
 // dump queen if someone already played a higher spade
-if (cards.hasSuit(spades, cardsInTrick(trick)).filter(card => card.rank > queen).length > 0) return theQueen;
-else card = cards.findLowestCardInList(myOtherSpades);
-return card? card : theQueen;
-
+list = cardsInTrick(trick).filter(card => card.rank > queen && card.suit === spades);
+if (list.length > 0) return theQueen;
+if (myOtherSpades.length > 0) return cards.findHighestCardInList(myOtherSpades);
+else return theQueen;
 } // if
 
-//console.log("this should never happen");
+//console.log("getRidOfQueen: fallthrough - this should never happen");
 debugger;
 } // getRidOfQueenStrategy
 
@@ -344,14 +363,15 @@ return players.findIndex(player => hasTwoOfClubs(player.hand));
 } // selectPlayerHoldingTwoOfClubs
 
 function assignTrick (trick) {
+console.debug("assignTrick: ", trick);
 const suit = trick[0].card.suit;
-trick = trick.sort(trickHighCardFirst );
-const item = trick.find(item => item.card.suit === suit);
-const player = item.player;
+const player = trick.sort(trickHighCardFirst ).filter(item => item.card.suit === suit)[0].player;
 player.tricks.push(trick);
+console.debug(`- ${player.name} took trick `, trick, " with suit ", suit);
 
-const cards = cardsInTrick(trick);
-player.score += calculatePoints (cards);
+const points = calculatePoints(cardsInTrick(trick));
+player.score += points;
+console.debug(`- ${points} added to ${player.name}`);
 return player;
 } // assignTrick
 
@@ -360,10 +380,8 @@ return cards.reduce((score, card) => score + cardScore(card), 0);
 } // calculatePoints
 
 function cardScore (card) {
-const hearts = cards.suitNames.indexOf("hearts");
-
 if (card.suit === hearts) return 1;
-if (cards.isCard(card, cards.nameToCard("qs"))) return 13;
+if (cards.isCard(card, queenOfSpades)) return 13;
 return 0;
 } // cardScore
 
@@ -440,7 +458,7 @@ return suits.map((list, suit) => ({suit, list}))
 
 function shortestList (...lists) {
 return lists.sort((l1, l2) => l1.length <= l2.length? -1 : 1)
-//.filter(l => l.length > 0);
+.filter(l => l.length > 0);
 } // shortestList
 
 function shortestSuitFirst (s1, s2) {
