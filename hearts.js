@@ -25,7 +25,7 @@ let heartsBroken = false;
 let roundCount = 0;
 
 export function startNewGame () {
-//console.log("starting game...");
+//console.debug("starting game...");
 
 for (const player of players) {
 player.score = 0;
@@ -53,7 +53,7 @@ ${displayFinalScores()}
 async function playRound () {
 await userStartsRound();
 heartsBroken = false;
-//console.log("starting round ", roundCount);
+//console.debug("starting round ", roundCount);
 logMessage(`<h2>Starting round ${roundCount}.</h2>`);
 dealNewRound();
 dispatch("updateHand", {hand: players[0].hand});
@@ -64,13 +64,11 @@ players.forEach(player => player.strategy = null);
 
 let trickWinner = null;
 while (not(roundComplete())) {
-//console.log("trick start:");
 //console.debug("hearts.trickStart...");
 log.trickStart();
 trickWinner = await playTrick(trickWinner?.player);
-//console.log("trickWinner: ", trickWinner);
 
-//console.debug("hearts: ", trickWinner.player.name, " took...");
+//console.debug("trickWinner: ", trickWinner);
 log.currentTrick(`${trickWinner.player.name} took ${displayTrick(trickWinner.trick)}.`);
 if (heartsBroken && heartsBroken !== "displayOnce") {
 //console.debug("hearts.hearts broken...");
@@ -78,7 +76,7 @@ log.currentTrick("Hearts have been broken.");
 heartsBroken = "displayOnce";
 } // if
 
-//console.log("trick complete.");
+//console.debug("trick complete.");
 log.trickComplete();
 } // while roundNotComplete()
 
@@ -90,14 +88,14 @@ dispatch("roundComplete");
 async function playTrick (startingPlayer) {
 let isFirstTrickInRound = not(startingPlayer);
 const playerOrder = trickOrder(isFirstTrickInRound? indexOfPlayerHoldingTwoOfClubs() : players.indexOf(startingPlayer));
-//console.log("trick order is ", playerOrder.map(p => p.name).join(", "));
+//console.debug("trick order is ", playerOrder.map(p => p.name).join(", "));
 
 let player = null, trick = [];
 for (player of playerOrder) {
 const card = await playTurn(player, trick, isFirstTrickInRound);
 trick.push({player, card});
 //console.debug(`hearts: player.name} played ${cards.displayCard(card)}.`);
-log.currentTrick(`<p ${isFirstTrickInRound? "data-trickStart" : ""}>${player.name} played ${cards.displayCard(card)}.</p>`);
+log.currentTrick(`${player.name} played ${cards.displayCard(card)}.`);
 
 isFirstTrickInRound = false;
 if (isHumanPlayer(player)) dispatch("updateHand", {hand: player.hand});
@@ -115,21 +113,21 @@ let card = null;
 let error = null;
 do {
 if (isFirstTrickInRound) {
-//console.log("first trick in round");
+//console.debug("first trick in round");
 card = cards.nameToCard("2c");
 } else {
 card = isHumanPlayer(player)? await userCardPlayed()
 : selectCard(player, suit, trick);
 } // if
-//console.log(`player ${player.name} selected ${cards.displayCard(card)}`);
+//console.debug(`player ${player.name} selected ${cards.displayCard(card)}`);
 
 error = playCard(card, suit, player);
-//console.log("- card played: ", card, ", by ", player.name, ", error = ", error);
+//console.debug("- card played: ", card, ", by ", player.name, ", error = ", error);
 
 if (error) {
 errorMessage(error);
 if (not(isHumanPlayer(player))) {
-//console.log(`AI error: ${error}`);
+//console.debug(`AI error: ${error}`);
 debugger;
 } // if
 
@@ -169,8 +167,8 @@ return order;
 function selectCard (player, suit, trick) {
 if (isHumanPlayer(player)) {
 errorMessage("this should never be called with human player!");
-//console.log("this should never be called with human player: ", player);
-return null;
+//console.debug("this should never be called with human player: ", player);
+debugger;
 } // if
 
 const hand = player.hand;
@@ -271,7 +269,7 @@ function getRidOfQueenStrategy (hand, suit, trick) {
 */
 
 
-//console.log("getRidOfQueenStrategy:");
+//console.debug("getRidOfQueenStrategy:");
 const player = players.find(p => p.hand === hand);
 if (not(hasQueenOfSpades(hand))) {
 player.strategy = duckingStrategy;
@@ -290,7 +288,7 @@ const firstCardInTrick = trick.length === 0;
 const theQueen = cards.nameToCard("qs");
 
 if (firstCardInTrick) {
-//console.log("- firstCardInTrick");
+//console.debug("- firstCardInTrick");
 if (onlySpades) return cards.findHighestCardInList(myOtherSpades);
 if (heartsBroken) return cards.findHighestCardInList(shortestList(myHearts, myClubs, myDiamonds)[0]);
 if (myClubs.length > 0 || myDiamonds.length > 0) return cards.findHighestCardInList(shortestList(myClubs, myDiamonds)[0]);
@@ -311,7 +309,7 @@ else if (suit === clubs || suit === diamonds) return cards.findHighestCardInList
 else if (suit === hearts) return cards.findLowestCardInList(list);
 
 // suit is spades
-//console.log("- follow suit in spades");
+//console.debug("- follow suit in spades");
 
 let card;
 // dump queen if someone already played a higher spade
@@ -321,7 +319,7 @@ if (myOtherSpades.length > 0) return cards.findHighestCardInList(myOtherSpades);
 else return theQueen;
 } // if
 
-//console.log("getRidOfQueen: fallthrough - this should never happen");
+//console.debug("getRidOfQueen: fall through - this should never happen");
 debugger;
 } // getRidOfQueenStrategy
 
@@ -363,15 +361,15 @@ return players.findIndex(player => hasTwoOfClubs(player.hand));
 } // selectPlayerHoldingTwoOfClubs
 
 function assignTrick (trick) {
-console.debug("assignTrick: ", trick);
+//console.debug("assignTrick: ", trick);
 const suit = trick[0].card.suit;
 const player = trick.sort(trickHighCardFirst ).filter(item => item.card.suit === suit)[0].player;
 player.tricks.push(trick);
-console.debug(`- ${player.name} took trick `, trick, " with suit ", suit);
+//console.debug(`- ${player.name} took trick `, trick, " with suit ", suit);
 
 const points = calculatePoints(cardsInTrick(trick));
 player.score += points;
-console.debug(`- ${points} added to ${player.name}`);
+//console.debug(`- ${points} added to ${player.name}`);
 return player;
 } // assignTrick
 
@@ -436,13 +434,13 @@ ${players.sort((p1, p2) => p1.score < p2.score? -1 : 1)
 
 
 export async function userStartsRound () {
-//console.log("userStartsRound:");
+//console.debug("userStartsRound:");
 //setTimeout(() => 
 log.prompt("Press control+enter to start a new round.")
 //, 200);
 let e;
 while (e = await blockUntilEvent("userCommand")) {
-//console.log(e);
+//console.debug(e);
 if (e.command === "newRound") return;
 } // while
 } // userStartsRound

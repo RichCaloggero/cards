@@ -11,34 +11,24 @@ $log.innerHTML = "";
 } // clear
 
 export function trickStart () {
-//$log.querySelectorAll("#current-trick").forEach(x => x.removeAttribute("id"));
 $log.querySelectorAll("[data-error], [data-prompt]").forEach(x => x.remove());
-//console.debug("log.trickStart:");
-//$log.insertAdjacentHTML("beforeEnd", `<div id="current-trick">\n</div>\n`);
 } // trickStart
 
 export function trickComplete () {
-$log.insertAdjacentHTML("beforeEnd", "<hr>\n");
+logMessage("<hr>\n");
 } // trickComplete
 
 export function currentTrick (text) {
-//console.debug("log.currentTrick: ", text);
-/*const log = $log.querySelector("#current-trick");
-if (log) log.insertAdjacentHTML("beforeEnd", `<p>${text}</p>`);
-else errorMessage("no current trick!");
-*/
 logMessage(text);
 } // currentTrick
 
 export function refreshCurrentTrick () {
-return;
-const log = $log.querySelector("#current-trick");
-if (log) {
-log.innerHTML = log.innerHTML;
+const index = [...$log.children].findLastIndex(x => x.tagName === "HR" || x.tagName === "H2");
+const elements = [...$log.children].slice(index+1);
 
-} else {
-errorMessage("no current trick!");
-} // if
+for (const element of elements) element.remove();
+for (const element of elements) $log.appendChild(element);
+
 } // refreshCurrentTrick
 
 export function prompt (text) {
