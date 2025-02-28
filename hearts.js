@@ -45,8 +45,9 @@ await playRound ();
 logMessage(displayScores(players));
 } // while
 
-logMessage(`<h2>Game Complete: final scores</h2>
-${displayFinalScores()}
+logMessage(`<h2>Final scores</h3>
+${displayScores(players)}
+<h3>${displayWinners(players)}</h3>
 `);
 } // playGame
 
@@ -417,21 +418,17 @@ return Math.max(...players.map(p => p.score));
 } // highestScore
 
 function displayScores (players) {
-return "<pre>\n"
-+ players.map(p => `${p.name}: ${p.score}`).join("\n")
-+ "</pre>\n";
+return `<div class="scores"><pre>
+${players.map(p => `${p.name}: ${p.score}`).join("\n")}
+</pre></div>
+`;
 } // displayScores
 
-function displayFinalScores (players) {
-return `<h2>Final Scores</h2\n
-<pre>
-${players.sort((p1, p2) => p1.score < p2.score? -1 : 1)
-.map(p => `${p.name}: ${p.score}`)
-.join("\n")
-}</pre>
-`;
-} // displayFinalScores
-
+function displayWinners (players) {
+const all = players.sort((p1,p2) => p1.score < p2.score? -1 : 1);
+const winners = all.filter(p => p.score === all[0].score);
+return `${winners.map(p => p.name).join(", and ")} won with score ${winners[0].score}.`;
+} // displayWinners
 
 export async function userStartsRound () {
 //console.debug("userStartsRound:");
