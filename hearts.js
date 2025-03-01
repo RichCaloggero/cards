@@ -2,7 +2,7 @@
 var queenAlert = false,
 showHand = false,
 showStrategy = true,
-shootingHand = 1; // which player gets a shootable hand
+shootingHand = -1; // which player gets a shootable hand
 
 import * as cards from "./cards.js";
 import { not, sum, blockUntilEvent, dispatch } from "./utilities.js";
@@ -331,7 +331,7 @@ debugger;
 function createShootingHand () {
 console.debug("createShootingHand:");
 const hand = cards.cardList(
-..."ac kc qc as ks qs ah kh qh jh 3c 5s jd".split(" ")
+"ac kc as ks qs 6s ah kh qh 8h 3c 5s jd".split(" ")
 );
 console.debug(`- hand: ${displayCards(hand)}`);
 
@@ -548,7 +548,7 @@ return [0,1,2,3].filter(suit => cards.hasSuitSize(suit, maxSize, hand)).sort();
 
 
 function hasChanceOfShootingTheMoon (hand) {
-return cards.rank(hand, jack).length >= 9;
+return cards.rank(hand, jack).length >= 8 && cards.rank(cards.hasSuit(hearts, hand), queen).length === 3;
 } // hasChanceOfShootingTheMoon 
 
 function _hasChanceOfShootingTheMoon (hand) {

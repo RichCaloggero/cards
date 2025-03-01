@@ -191,7 +191,7 @@ export function lowCardFirst (c1, c2) {
 return c1.rank >= c2.rank? 1 : -1;
 } // lowCardFirst 
 
-export function cardList (...names) {
+export function cardList (names) {
 return names.map(name => nameToCard(name));
 } // cardList
 
