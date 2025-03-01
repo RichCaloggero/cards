@@ -5,19 +5,19 @@
 
 <style>
 #log {position: fixed; bottom: 0%; left: 0%;}
-#status: {position: fixed; top: 0%; left: 0%; height: 3em;}
 </style>
 </head>
 <body>
 <h1>Hearts</h1>
-<div role="status"  id="status"></div>
 
 <p>Welcome to hearts></p>
-<p><button popovertarget="rules" accesskey="r">Click this button to read the rules of the game.</button></p>
-<p>Press control+enter to begin a round, press enter to play a card, press shift+enter to repeat the cards played so far in the current trick.</p>
+<p><button popoverTarget="rules" accessKey="r">Click this button to read the rules of the game.</button></p>
+<p><button popoverTarget="keyboardCommands" accessKey="/">Click this button to show all keyboard commands.</button></p>
 
-<div class="hand">
-<label>hand:
+
+<fieldset class="hand">
+<legend>Press control+enter to begin a round, enter to play a card, questionmark to show keyboard commands.</legend>
+label>hand:
 <br><select autofocus id="hand" accesskey="h"></select></label>
 </div>
 <br><button id="startNewRound">Start new round</button>
@@ -51,7 +51,7 @@ function setupEventListeners () {
 $hand.addEventListener("click", e => dispatch("userCardPlayed", {card: JSON.parse(e.target.selectedOptions[0].value)}));
 $startNewRound.addEventListener("click", startNewRound);
 
-document.addEventListener("keyup", e => {
+document.addEventListener("keydown", e => {
 if (e.key === "Enter") {
 e.preventDefault();
 e.stopPropagation();
@@ -122,6 +122,10 @@ entry[1]? `data-${entry[0]}="${entry[1]}"`
 </script>
 
 <dialog popover id="rules">
+<div class="actions">
+<button class="close" popovertarget="rules" popovertargetaction="hide">Close</button>
+</div>
+
 <h1 id="hearts">Hearts</h1>
 <p>Hearts is a trick taking game played with four players. Each player is dealt 13 cards. Each round begins with the player who holds the two of clubs. Play proceeds in a clockwise fashion till all four players have played a card.</p>
 <p>Each block of four cards is called a trick. The player who played the first card in the trick defines the suit for that trick. Each player in turn must play a card in that suit. Highest card in the trick wins the trick.  If a player does not have a card of the indicated suit, the player may throw any other card from her hand into the trick, but that card's rank will not count towards winning the trick.</p>
@@ -136,10 +140,41 @@ entry[1]? `data-${entry[0]}="${entry[1]}"`
 <li>if a player takes all 13 hearts and the queen of spades, they "shoot the moon", and they either subtract 26 points from their score, or add 26 points to everyone else's score, whichever they choose</li>
 </ul>
 
-<div class="actions">
-<button class="close" popovertarget="rules" popovertargetaction="hide">Close</button>
-</div>
 </dialog>
 
+<dialog popover id="keyboardCommands">
+<div class="actions">
+<button class="close" popoverTarget="keyboardCommands" popoverTargetAction="hide">Close</button>
+</div>
+<h1>Keyboard Commands</h1>
+
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Enter</td>
+<td>Play currently selected card in your hand</td>
+</tr>
+<tr>
+<td>control+enter</td>
+<td>begins new round of 13 tricks</td>
+</tr>
+<tr>
+<td>shift+enter</td>
+<td>repeats all cards played so far in current trick</td>
+</tr>
+<tr>
+<td>control+shift+enter</td>
+<td>repeats last scores displayed which might not be current)</td>
+</tr>
+</tbody>
+</table>
+
+</dialog>
 </body>
 </html>

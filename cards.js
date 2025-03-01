@@ -10,16 +10,29 @@ cards: createCards(),
 order: range(0,51),
 dealer () {
 return this.order.values().map(i => this.cards[i]);
-} // *dealer
+}, // *dealer
+
+takeCards (cards) {
+for (const card of cards) {
+const cardIndex = this.cards.findIndex(c => isCard(c, card));
+console.debug("takeCards: splicing ", displayCard(card), "; index=", cardIndex, " returned ",
+this.cards.splice(cardIndex, 1)
+);
+} // for
+
+this.order = range(0, this.cards.length-1);
+return cards;
+} // takeCards
 }; // deck
 } // createDeck
 
 export function shuffleDeck (deck) {
-deck.order = new Array(52).fill(-1);
+const count = deck.cards.length;
+deck.order = new Array(count).fill(-1);
 
 let slot = 0;
-while (slot <= 51) {
-const n = randomInteger(0,51);
+while (slot <= count-1) {
+const n = randomInteger(0,count-1);
 if (deck.order.includes(n)) continue;
 deck.order[slot] = n;
 slot += 1;
@@ -49,6 +62,7 @@ const rank = (card.rank <= 10? card.rank : faceCards[card.rank-11]).toString();
 const suit = suitNames[card.suit];
 return rank + " of " + suit;
 } // displayCard
+
 
 function range (_n1, _n2) {
 const n1 = Math.min(_n1, _n2);
@@ -97,6 +111,7 @@ for (let suit of hand) {
 suit = suit.sort(highestFirst);
 for (const card of suit) list.push(card);
 } // suit
+
 
 return list;
 
@@ -169,4 +184,9 @@ return c1.rank <= c2.rank? 1 : -1;
 export function lowCardFirst (c1, c2) {
 return c1.rank >= c2.rank? 1 : -1;
 } // lowCardFirst 
+
+export function cardList (...names) {
+return names.map(name => nameToCard(name));
+} // cardList
+
 //alert("cards module loaded");

@@ -24,12 +24,22 @@ logMessage(text);
 
 export function refreshCurrentTrick () {
 const index = [...$log.children].findLastIndex(x => x.tagName === "HR" || x.tagName === "H2");
-const elements = [...$log.children].slice(index+1);
+refresh(index);
+} // refreshCurrentTrick
 
+export function refreshScores () {
+const index = [...$log.children].indexOf($log.querySelector(".scores"));
+refresh(index);
+} // refreshScores
+
+
+function refresh (index1, index2) {
+const log = [...$log.children];
+
+const elements = log.slice(index1, index2);
 for (const element of elements) element.remove();
 for (const element of elements) $log.appendChild(element);
-
-} // refreshCurrentTrick
+} // refresh
 
 export function prompt (text) {
 //console.debug("log.prompt: " + text);

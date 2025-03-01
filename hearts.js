@@ -1,7 +1,8 @@
 /// debugging flags
 var queenAlert = false,
 showHand = false,
-showStrategy = false;
+showStrategy = false,
+shootingHand = 0;
 
 import * as cards from "./cards.js";
 import { not, sum, blockUntilEvent, dispatch } from "./utilities.js";
@@ -47,7 +48,7 @@ logMessage(displayScores(players));
 
 logMessage(`<h2>Final scores</h3>
 ${displayScores(players)}
-<h3>${displayWinners(players)}</h3>
+<h3 class="winners">${displayWinners(players)}</h3>
 `);
 } // playGame
 
@@ -56,12 +57,15 @@ await userStartsRound();
 heartsBroken = false;
 //console.debug("starting round ", roundCount);
 logMessage(`<h2>Starting round ${roundCount}.</h2>`);
-dealNewRound();
+dealNewRound(shootingHand);
 dispatch("updateHand", {hand: players[0].hand});
 if (queenAlert) logMessage(`${players.find(player => hasQueenOfSpades(player.hand)).name} has the queen!`);
 
 const trickList = [];
-players.forEach(player => player.strategy = null);
+for (const player of players) {
+player.tricks = [];
+player.strategy = null;
+} // for
 
 let trickWinner = null;
 while (not(roundComplete())) {
@@ -269,6 +273,8 @@ function getRidOfQueenStrategy (hand, suit, trick) {
 - prefer to keep higher cards in order to lead tricks so you have more control over what cards you play
 */
 
+const firstCardInTrick = trick.length === 0;
+const theQueen = cards.nameToCard("qs");
 
 //console.debug("getRidOfQueenStrategy:");
 const player = players.find(p => p.hand === hand);
@@ -285,8 +291,6 @@ const myOtherSpades = mySpades.filter(card => card.rank !== queen);
 const onlyHearts = hand.every(card => card.suit === hearts);
 const onlySpades = hand.every(card => card.suit === spades);
 
-const firstCardInTrick = trick.length === 0;
-const theQueen = cards.nameToCard("qs");
 
 if (firstCardInTrick) {
 //console.debug("- firstCardInTrick");
@@ -324,28 +328,58 @@ else return theQueen;
 debugger;
 } // getRidOfQueenStrategy
 
+function createShootingHand () {
+console.debug("createShootingHand:");
+const hand = cards.cardList(
+..."ac kc qc as ks qs ah kh qh jh 3c 5s jd".split(" ")
+);
+console.debug(`- hand: ${displayCards(hand)}`);
+
+deck.takeCards(hand);
+console.debug(`deck length: ${deck.cards.length}`);
+
+return hand;
+} // createShootingHand
+
 function shootingStrategy (hand, suit, trick) {
+/* Shooting the moon
+- must have high cards (hopefully ace, king, queen) in 2 or hopefully 3 suits (best if one of them is hearts)
+- get rid of low cards first while hearts probably won't be thrown
+- try to keep the lead as much as possible and push suits you know you can win
+- take tricks in long suits first to break hearts
+- take as many hearts as you can
+- having the queen in your hand at the start is preferable / easier
+*/
+
 const player = players.find(p => p.hand === hand);
-const allPoints = players.filter(player => calculatePointsThisRound(player));
-if (allPoints.length > 1 || allPoints[0] !== player) {
-player.strategy = duckingStrategy;
-return duckingStrategy(suit, hand, trick);
+// if someone other than you took a trick this round, abandon shooting strategy
+const allPoints = players.filter(p => p !== player && calculatePointsThisRound(p));
+if (allPoints.length > 1) {
+player.strategy = hasQueenOfSpades(hand)? getRidOfQueenStrategy : duckingStrategy;
+return player.strategy(hand, suit, trick);
 } // if
 
-const highCardStraights = findHighCardStraights(hand);
-const mySpades = cards.hasSuit(spades, hand).filter(card => card.rank !== cards.queen);
+const myHand = organizeBySuit(hand);
+const mySuits = shortestList(...myHand).reverse();
+const [myClubs, mySpades, myHearts, myDiamonds] = myHand;
+const myOtherSpades = mySpades.filter(card => card.rank !== queen);
+const onlyHearts = hand.every(card => card.suit === hearts);
+const onlySpades = hand.every(card => card.suit === spades);
 
-if (heartsBroken && highCardStraights[hearts].length > 0) return cards.findLowestCardInList(highStraights[hearts]);
-else if (mySpades.length > 0) return cards.findLowestCardInList(mySpades);
+
 
 } // shootingStrategy
 
-export function dealNewRound () {
+export function dealNewRound (playerIndex = -1) {
+const cheater = playerIndex >= 0 && playerIndex <= 3? players[playerIndex] : null;
+if (cheater) cheater.hand = createShootingHand(deck);
 const dealer = cards.dealer(deck);
 
 for (const player of players) {
+if (player === cheater) continue;
 player.hand = cards.createHand(dealer, 13);
 } // for
+
 } // dealNewHand
 
 function roundNotComplete() {
