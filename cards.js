@@ -140,6 +140,12 @@ export function hasRank (low, high, list) {
 return list.filter(card => card.rank >= low && card.rank <= high);
 } // hasRank
 
+export function rank (list, low, high) {
+if (Number.isInteger(low) && low >= 0) list = list.filter(card => card.rank >= low);
+if (Number.isInteger(high) && high >= 0) list = list.filter(card => card.rank <= high);
+return list;
+} // rank
+
 export function hasRankInSuit (suit, low, high, list) {
 return hasRank(low, high, hasSuit(suit, list));
 } // hasRankInSuit

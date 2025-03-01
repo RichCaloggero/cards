@@ -1,8 +1,8 @@
 /// debugging flags
 var queenAlert = false,
 showHand = false,
-showStrategy = false,
-shootingHand = 0;
+showStrategy = true,
+shootingHand = 1; // which player gets a shootable hand
 
 import * as cards from "./cards.js";
 import { not, sum, blockUntilEvent, dispatch } from "./utilities.js";
@@ -362,17 +362,35 @@ return player.strategy(hand, suit, trick);
 const myHand = organizeBySuit(hand);
 const mySuits = shortestList(...myHand).reverse();
 const [myClubs, mySpades, myHearts, myDiamonds] = myHand;
-const myOtherSpades = mySpades.filter(card => card.rank !== queen);
-const onlyHearts = hand.every(card => card.suit === hearts);
-const onlySpades = hand.every(card => card.suit === spades);
+const firstTrickInRound = hand.length === 13;
+const firstCardInTrick = trick.length === 0;
 
+if (firstTrickInRound && firstCardInTrick) {
+console.error("both firstTrickInRound and firstCardInTrick cannot be true");
+debugger;
+} // if
 
+if (not(heartsBroken) && mySuits[0].suit === hearts) {
+mySuits.shift();
+mySuits.push(hearts);
+} // if
 
+if (firstCardInTrick) {
+if (heartsBroken) {
+if (myHearts.length > 0) return cards.findHighestCardInList(myHearts);
+} // if
+
+return cards.findHighestCardInList(hand.filter(card => card.suit !== hearts));
+
+} else {
+const list = myHand[suit].length > 0? myHand[suit] : mySuits[0];
+return cards.findHighestCardInList(list);
+} // if
 } // shootingStrategy
 
 export function dealNewRound (playerIndex = -1) {
 const cheater = playerIndex >= 0 && playerIndex <= 3? players[playerIndex] : null;
-if (cheater) cheater.hand = createShootingHand(deck);
+if (cheater) cheater.hand = createShootingHand(cards.createDeck(deck));
 const dealer = cards.dealer(deck);
 
 for (const player of players) {
@@ -530,11 +548,16 @@ return [0,1,2,3].filter(suit => cards.hasSuitSize(suit, maxSize, hand)).sort();
 
 
 function hasChanceOfShootingTheMoon (hand) {
+return cards.rank(hand, jack).length >= 9;
+} // hasChanceOfShootingTheMoon 
 
-return cards.hasRank(10, 14, cards.hasSuit(hearts, hand)).length >= 5
-&& cards.hasRank(jack, ace, cards.hasSuit(spades, hand)).length >= 4
-&& hasQueenOfSpades(hand);
-} // hasChanceOfShootingTheMoon
+function _hasChanceOfShootingTheMoon (hand) {
+return cards.hasRank(jack, ace, cards.hasSuit(hearts, hand)).length === 4
+&& cards.hasRank(queen, ace, cards.hasSuit(spades, hand)).length === 3
+&& (cards.hasRank(queen, ace, cards.hasSuit(clubs, hand)).length === 3
+|| cards.hasRank(queen, ace, cards.hasSuit(diamonds, hand)).length === 3 
+);
+} // _hasChanceOfShootingTheMoon
 
 
 //alert("hearts module loaded");
