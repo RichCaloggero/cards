@@ -230,9 +230,13 @@ if (showStrategy) logMessage(`${player.name} is trying to get rid of the queen.`
 return getRidOfQueenStrategy;
 } else {
 if (showStrategy) logMessage(`${player.name} is ducking...`);
-return duckingStrategy;
+return chooseDuckingStrategy();
 } // if
 } // chooseStrategy
+
+function chooseDuckingStrategy (probability = 0.375) {
+return Math.random() < probability? duckingStrategy1 : duckingStrategy2;
+} // chooseDuckingStrategy
 
 function executeStrategy (strategy, hand, suit, trick) {
 try {
@@ -243,25 +247,44 @@ debugger;
 } // try
 } // executeStrategy
 
-function duckingStrategy (hand, suit, trick) {
-const isFirstCardInTrick = suit < 0;
-const hearts = cards.suitNames.indexOf("hearts");
+
+function duckingStrategy1 (hand, suit, trick) {
+const isFirstCardInTrick = trick.length === 0;
 let card = null;
 
 if (isFirstCardInTrick) {
-if (heartsBroken) card = cards.findLowestCardInList(hand);
-else card =
-cards.findLowestCardInList(hand.filter(c => c.suit !== hearts))
+if (heartsBroken) {
+if (cards.rank(cards.hasSuit(hearts, hand), 2, 3).length > 0) return cards.findLowestCardInSuit(hearts, hand);
+} // if
+
+return cards.findLowestCardInList(hand.filter(card => card.suit !== hearts))
 || cards.findLowestCardInList(hand);
 
 } else {
-card = cards.findLowestCardInSuit(suit, hand)
-|| cards.findLowestCardInSuit(hearts, hand)
-|| cards.findLowestCardInList(hand);
+return cards.findLowestCardInSuit(suit, hand)
+|| cards.findHighestCardInSuit(hearts, hand)
+|| cards.findHighestCardInList(hand);
+} // if
+} // duckingStrategy1
+
+function duckingStrategy2 (hand, suit, trick) {
+const isFirstCardInTrick = trick.length === 0;
+
+if (isFirstCardInTrick) {
+
+if (heartsBroken) {
+if (cards.rank(cards.hasSuit(hearts, hand), 2, 4).length > 0) return cards.findLowestCardInSuit(hearts, hand);
 } // if
 
-return card;
-} // duckingStrategy
+return cards.findLowestCardInList(shortestSuitInList(hand.filter(card => card.suit !== hearts)))
+|| cards.findLowestCardInList(hand);
+
+} else {
+return cards.findLowestCardInSuit(suit, hand)
+|| cards.findHighestCardInSuit(hearts, hand)
+|| cards.findLowestCardInList(hand);
+} // if
+} // duckingStrategy2
 
 function getRidOfQueenStrategy (hand, suit, trick) {
 /* Strategy
@@ -279,8 +302,8 @@ const theQueen = cards.nameToCard("qs");
 //console.debug("getRidOfQueenStrategy:");
 const player = players.find(p => p.hand === hand);
 if (not(hasQueenOfSpades(hand))) {
-player.strategy = duckingStrategy;
-return duckingStrategy(hand, suit, trick);
+player.strategy = chooseDuckingStrategy();
+return player.strategy(hand, suit, trick);
 } // if
 if (hand.length === 1 && cards.isCard(hand[0], theQueen)) return theQueen;
 
@@ -534,17 +557,20 @@ function calculatePointsThisRound (player) {
 return sum(player.tricks.map(trick => calculatePoints(cardsInTrick(trick))));
 } // calculatePointsThisRound
 
+function shortestSuitInList (list) {
+return organizeBySuit(list)
+.filter(list => list.length > 0)
+.sort((l1, l2) => l1.length < l2.length? -1 : 1)
+[0];
+} // shortestSuitInList
+
 function hasQueenOfSpades (hand) {
 return cards.has(cards.nameToCard("qs"), hand);
 } // hasQueenOfSpades
 
 function hasTwoOfClubs (hand) {
-return cards.has(cards.nameToCard("2c"), hand);
+return cards.has(cards.createCard(2, clubs), hand);
 } // hasTwoOfClubs
-
-function hasShortSuit (hand, maxSize = 2) {
-return [0,1,2,3].filter(suit => cards.hasSuitSize(suit, maxSize, hand)).sort();
-} // hasShortSuit
 
 
 function hasChanceOfShootingTheMoon (hand) {

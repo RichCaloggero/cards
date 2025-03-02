@@ -80,7 +80,7 @@ return Math.floor(Math.random() * (n2-n1 + 1) + n1);
 } // randomInteger
 
 export function dealer (deck) {
-return shuffleDeck(deck).dealer();
+return shuffleDeck(shuffleDeck(deck)).dealer();
 } // dealer
 
 export function dealCards (dealer, count = 1) {
