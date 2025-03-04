@@ -133,7 +133,7 @@ return list.find(c => isCard(card, c));
 } // has
 
 export function hasSuit (suit, list) {
-return list.filter(card => card.suit === suit);
+return (list || []).filter(card => card.suit === suit);
 } // hasSuit
 
 export function hasRank (low, high, list) {
@@ -168,11 +168,11 @@ return {rank, suit};
 } // nameToCard
 
 export function findHighestCardInList (list) {
-return list.sort(highCardFirst)[0];
+return (list || []).sort(highCardFirst)[0];
 } // findHighestCardInList
 
 export function findLowestCardInList (list) {
-return list.sort(lowCardFirst)[0];
+return (list || []).sort(lowCardFirst)[0];
 } // findLowestCardInList
 
 export function findHighestCardInSuit(suit, list) {

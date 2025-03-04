@@ -1,7 +1,7 @@
 /// debugging flags
 var queenAlert = false,
 showHand = false,
-showStrategy = true,
+showStrategy = false,
 shootingHand = -1; // which player gets a shootable hand
 
 import * as cards from "./cards.js";
@@ -24,6 +24,7 @@ export const players= [
 ]; // players
 let heartsBroken = false;
 let roundCount = 0;
+let seenQueenThisRound = false;
 
 export function startNewGame () {
 //console.debug("starting game...");
@@ -55,6 +56,7 @@ ${displayScores(players)}
 async function playRound () {
 await userStartsRound();
 heartsBroken = false;
+seenQueenThisRound = false;
 //console.debug("starting round ", roundCount);
 logMessage(`<h2>Starting round ${roundCount}.</h2>`);
 dealNewRound(shootingHand);
@@ -132,7 +134,7 @@ error = playCard(card, suit, player);
 if (error) {
 errorMessage(error);
 if (not(isHumanPlayer(player))) {
-//console.debug(`AI error: ${error}`);
+console.debug(`AI error: ${error}`);
 debugger;
 } // if
 
@@ -206,6 +208,7 @@ if (playerHasSuit && card.suit !== suit) return `You must follow suit; ${cards.s
 } // if
 
 heartsBroken = heartsBroken || (card.suit === hearts);
+seenQueenThisRound = seenQueenThisRound || cards.isCard(card, queenOfSpades);
 const index = indexOfCardInHand(card, player.hand);
 if (index >= 0) {
 player.hand.splice(index, 1)[0];
@@ -225,16 +228,17 @@ if (showHand) logMessage(`${player.name} has: ${displayCards(player.hand)}`);
 if (hasChanceOfShootingTheMoon(hand)) {
 if (showStrategy) logMessage(`${player.name} is attempting to shoot the moon.`);
 return shootingStrategy;
-} else if (hasQueenOfSpades(hand)) {
+/*} else if (hasQueenOfSpades(hand)) {
 if (showStrategy) logMessage(`${player.name} is trying to get rid of the queen.`);
 return getRidOfQueenStrategy;
+*/
 } else {
 if (showStrategy) logMessage(`${player.name} is ducking...`);
 return chooseDuckingStrategy();
 } // if
 } // chooseStrategy
 
-function chooseDuckingStrategy (probability = 0.375) {
+function chooseDuckingStrategy (probability = 1) {
 return Math.random() < probability? duckingStrategy1 : duckingStrategy2;
 } // chooseDuckingStrategy
 
@@ -249,21 +253,48 @@ debugger;
 
 
 function duckingStrategy1 (hand, suit, trick) {
+const player = players.find(p => p.hand === hand);
 const isFirstCardInTrick = trick.length === 0;
-let card = null;
+const isFirstTrickInRound = hand.length === 13;
+
+// indexed by suit
+const myHand = organizeBySuit(hand);
+const [myClubs, mySpades, myHearts, myDiamonds] = myHand;
+const myOtherSpades = mySpades.filter(card => card.rank !== queen);
+const hasQueenOfSpades = mySpades.length !== myOtherSpades.length;
+
+if (hand.length === 1 ) return hand[0];
 
 if (isFirstCardInTrick) {
-if (heartsBroken) {
-if (cards.rank(cards.hasSuit(hearts, hand), 2, 3).length > 0) return cards.findLowestCardInSuit(hearts, hand);
-} // if
+const list = hasQueenOfSpades? shortestList(myClubs, myDiamonds)
+: seenQueenThisRound? shortestList(myClubs, myDiamonds, mySpades)
+: cards.findLowestCardInList(mySpades)?.rank < queen? mySpades
+: heartsBroken? myHearts
+: hand.filter(card => card.suit !== hearts);
 
-return cards.findLowestCardInList(hand.filter(card => card.suit !== hearts))
-|| cards.findLowestCardInList(hand);
+return (
+hasQueenOfSpades? cards.findHighestCardInList(list) 
+: list[0]?.[0]?.suit === hearts? cards.findLowestCardInList(list)
+: cards.findLowestCardInList(list)
+) || cards.findLowestCardInList(hand);
 
 } else {
-return cards.findLowestCardInSuit(suit, hand)
-|| cards.findHighestCardInSuit(hearts, hand)
-|| cards.findHighestCardInList(hand);
+// try to follow suit
+
+if (myHand[suit].length === 0)
+return hasQueenOfSpades? queenOfSpades
+: cards.rank(mySpades, king) > 0? cards.findHighestCardInList(mySpades)
+: (cards.findHighestCardInList(myHearts) || cards.findHighestCardInList(hand));
+
+if (suit !== spades)
+return hasQueenOfSpades? cards.findHighestCardInSuit(suit,hand)
+: cards.findLowestCardInSuit(suit, hand);
+
+// dump queen if higher card already on trick
+if (hasQueenOfSpades && cards.rank(cardsInTrick(trick), king).length > 0) return queenOfSpades;
+
+return hasQueenOfSpades? (cards.findHighestCardInList(myOtherSpades) || queenOfSpades)
+: cards.findLowestCardInList(mySpades);
 } // if
 } // duckingStrategy1
 
@@ -285,6 +316,7 @@ return cards.findLowestCardInSuit(suit, hand)
 || cards.findLowestCardInList(hand);
 } // if
 } // duckingStrategy2
+
 
 function getRidOfQueenStrategy (hand, suit, trick) {
 /* Strategy
@@ -472,7 +504,7 @@ function trickHighCardFirst (x1, x2) {
 return cards.highCardFirst(x1.card, x2.card);
 } // trickHighCardFirst 
 
-function highestCardInTrick(trick) {
+function findHighestCardInTrick(trick) {
 return sortTrickHighestCardFirst (trick)[0].card;
 } // highestCardInTrick
 
@@ -526,10 +558,21 @@ return suits.map((list, suit) => ({suit, list}))
 .sort(order);
 } // orderBySuit
 
+function shortestSuitInList (list) {
+return organizeBySuit(list)
+.filter(list => list.length > 0)
+.sort((l1, l2) => l1.length < l2.length? -1 : 1)
+[0];
+} // shortestSuitInList
+
 function shortestList (...lists) {
+return orderLists(...lists)[0] || [];
+} // shortestList
+
+function orderLists (...lists) {
 return lists.sort((l1, l2) => l1.length <= l2.length? -1 : 1)
 .filter(l => l.length > 0);
-} // shortestList
+} // orderLists
 
 function shortestSuitFirst (s1, s2) {
 return s1.list.length <= s2.list.length? -1 : 1;
@@ -554,15 +597,15 @@ return [];
 } // findHighCardStraight
 
 function calculatePointsThisRound (player) {
-return sum(player.tricks.map(trick => calculatePoints(cardsInTrick(trick))));
+const points = player.tricks.map(trick => calculatePoints(cardsInTrick(trick)));
+
+// if someone shot the moon, increase everyone else's score by 26
+const moonIndex = points.findIndex(p => p === 26);
+if (moonIndex >= 0) points.map(p, i) => i === moonIndex? p : p+26);
+
+return sum(points);
 } // calculatePointsThisRound
 
-function shortestSuitInList (list) {
-return organizeBySuit(list)
-.filter(list => list.length > 0)
-.sort((l1, l2) => l1.length < l2.length? -1 : 1)
-[0];
-} // shortestSuitInList
 
 function hasQueenOfSpades (hand) {
 return cards.has(cards.nameToCard("qs"), hand);

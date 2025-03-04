@@ -48,7 +48,7 @@ fillSelectList($hand, hand);
 } // displayHand
 
 function setupEventListeners () {
-$hand.addEventListener("click", e => dispatch("userCardPlayed", {card: JSON.parse(e.target.selectedOptions[0].value)}));
+$hand.addEventListener("click", e => e.target.selectedOptions.length > 0? dispatch("userCardPlayed", {card: JSON.parse(e.target.selectedOptions[0].value)}) : "");
 $startNewRound.addEventListener("click", startNewRound);
 
 document.addEventListener("keydown", e => {
