@@ -44,13 +44,12 @@ roundCount = 0;
 while (not(gameComplete())) {
 roundCount += 1;
 await playRound ();
-logMessage(displayScores(players));
+logMessage(`<h3>Scores</h3>
+${displayScores(players)}
+</h3>`);
 } // while
 
-logMessage(`<h2>Final scores</h3>
-${displayScores(players)}
-<h3 class="winners">${displayWinners(players)}</h3>
-`);
+logMessage(`<h2 class="winners">${displayWinners(players)}</h2>`);
 } // playGame
 
 async function playRound () {
@@ -601,7 +600,7 @@ const points = player.tricks.map(trick => calculatePoints(cardsInTrick(trick)));
 
 // if someone shot the moon, increase everyone else's score by 26
 const moonIndex = points.findIndex(p => p === 26);
-if (moonIndex >= 0) points.map(p, i) => i === moonIndex? p : p+26);
+if (moonIndex >= 0) points = points.map((p, i) => i === moonIndex? p : p+26);
 
 return sum(points);
 } // calculatePointsThisRound
