@@ -14,13 +14,19 @@
 <p><button popoverTarget="rules" accessKey="r">Click this button to read the rules of the game.</button></p>
 <p><button popoverTarget="keyboardCommands" accessKey="/">Click this button to show all keyboard commands.</button></p>
 
+<fieldset>
+<legend>Log</legend>
+<label>Show only current round <input type="checkbox" id="hideRounds"></label>
+<label>Show only current tricks <input type="checkbox" checked id="hideTricks"></label>
+</fieldset>
 
 <fieldset class="hand">
 <legend>Press control+enter to begin a round, enter to play a card, questionmark to show keyboard commands.</legend>
 label>hand:
-<br><select autofocus id="hand" accesskey="h"></select></label>
-</div>
+<br><select autofocus id="hand" accesskey="h">
+</select></label>
 <br><button id="startNewRound">Start new round</button>
+</fieldset>
 
 <hr>
 <div role="log" id="log"></div>
@@ -30,12 +36,16 @@ import * as hearts from "./hearts.js";
 import * as cards from "./cards.js";
 import { not, dispatch } from "./utilities.js";
 import * as log from "./log.js";
+window.h = hearts, window.l = log;
 
+const $hideRounds = document.querySelector("#hideRounds");
+const $hideTricks = document.querySelector("#hideTricks");
 const $hand = document.querySelector("#hand");
 const $startNewRound = document.querySelector("#startNewRound");
 
 /// start
-log.initialize(document.querySelector("#log"), document.querySelector("#status"));
+log.initialize(document.querySelector("#log"));
+
 setupEventListeners();
 hearts.startNewGame();
 
@@ -48,6 +58,9 @@ fillSelectList($hand, hand);
 } // displayHand
 
 function setupEventListeners () {
+//$hideRounds.addEventListener("change", e => log.setHideRounds(e.target.checked));
+//$hideTricks.addEventListener("change", e => log.setHideTricks(e.target.checked));
+
 $hand.addEventListener("click", e => e.target.selectedOptions.length > 0? dispatch("userCardPlayed", {card: JSON.parse(e.target.selectedOptions[0].value)}) : "");
 $startNewRound.addEventListener("click", startNewRound);
 
@@ -58,8 +71,12 @@ e.stopPropagation();
 e.stopImmediatePropagation();
 $hand.focus();
 
-if (e.ctrlKey) {
+if (e.ctrlKey && e.shiftKey) {
+log.refreshScores();
+
+} else if (e.ctrlKey) {
 $startNewRound.click();
+
 } else if (e.shiftKey) {
 log.refreshCurrentTrick();
 

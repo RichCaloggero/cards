@@ -44,20 +44,19 @@ roundCount = 0;
 while (not(gameComplete())) {
 roundCount += 1;
 await playRound ();
-logMessage(`<h3>Scores</h3>
-${displayScores(players)}
-</h3>`);
+logMessage(displayScores(players));
 } // while
 
 logMessage(`<h2 class="winners">${displayWinners(players)}</h2>`);
 } // playGame
 
 async function playRound () {
+log.roundStart(roundCount);
 await userStartsRound();
+logMessage(`<h2>Starting round ${roundCount}.</h2>\n`);
 heartsBroken = false;
 seenQueenThisRound = false;
 //console.debug("starting round ", roundCount);
-logMessage(`<h2>Starting round ${roundCount}.</h2>`);
 dealNewRound(shootingHand);
 dispatch("updateHand", {hand: players[0].hand});
 if (queenAlert) logMessage(`${players.find(player => hasQueenOfSpades(player.hand)).name} has the queen!`);
@@ -72,13 +71,15 @@ let trickWinner = null;
 while (not(roundComplete())) {
 //console.debug("hearts.trickStart...");
 log.trickStart();
-trickWinner = await playTrick(trickWinner?.player);
+trickWinner = await playTrick(trickWinner?.player, trickList);
+trickList.push(trickWinner.trick);
 
 //console.debug("trickWinner: ", trickWinner);
-log.currentTrick(`${trickWinner.player.name} took ${displayTrick(trickWinner.trick)}.`);
+log.currentTrick(`<p class="trick-info">${trickWinner.player.name} took ${displayTrick(trickWinner.trick)}.</p>\n`);
+
 if (heartsBroken && heartsBroken !== "displayOnce") {
 //console.debug("hearts.hearts broken...");
-log.currentTrick("Hearts have been broken.");
+log.currentTrick(`<p class="trick-info">Hearts have been broken.</p>\n`);
 heartsBroken = "displayOnce";
 } // if
 
@@ -86,8 +87,7 @@ heartsBroken = "displayOnce";
 log.trickComplete();
 } // while roundNotComplete()
 
-logMessage(`End of round ${roundCount}.`);
-dispatch("roundComplete");
+log.roundComplete(roundCount);
 } // playRound
 
 
@@ -101,7 +101,7 @@ for (player of playerOrder) {
 const card = await playTurn(player, trick, isFirstTrickInRound);
 trick.push({player, card});
 //console.debug(`hearts: player.name} played ${cards.displayCard(card)}.`);
-log.currentTrick(`${player.name} played ${cards.displayCard(card)}.`);
+log.currentTrick(`<p class="trick-card">${player.name} played ${cards.displayCard(card)}.</p>\n`);
 
 isFirstTrickInRound = false;
 if (isHumanPlayer(player)) dispatch("updateHand", {hand: player.hand});
@@ -524,7 +524,8 @@ return Math.max(...players.map(p => p.score));
 } // highestScore
 
 function displayScores (players) {
-return `<div class="scores"><pre>
+return `<div class="scores">
+<h3>Scores</h3><pre>
 ${players.map(p => `${p.name}: ${p.score}`).join("\n")}
 </pre></div>
 `;
@@ -538,9 +539,6 @@ return `${winners.map(p => p.name).join(", and ")} won with score ${winners[0].s
 
 export async function userStartsRound () {
 //console.debug("userStartsRound:");
-//setTimeout(() => 
-log.prompt("Press control+enter to start a new round.")
-//, 200);
 let e;
 while (e = await blockUntilEvent("userCommand")) {
 //console.debug(e);
