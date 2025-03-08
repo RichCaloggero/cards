@@ -14,6 +14,7 @@ import * as log from "./log.js";
 const clubs = cards.clubs, spades = cards.spades, hearts = cards.hearts, diamonds = cards.diamonds;
 const jack = cards.jack, queen = cards.queen, king = cards.king, ace = cards.ace;
 const queenOfSpades = cards.createCard(queen, spades);
+const twoOfClubs = cards.createCard(2, clubs);
 
 const deck = cards.createDeck();
 export const players= [
@@ -121,7 +122,7 @@ let error = null;
 do {
 if (isFirstTrickInRound) {
 //console.debug("first trick in round");
-card = cards.createCard(2, clubs);
+card = twoOfClubs;
 } else {
 card = isHumanPlayer(player)? await userCardPlayed()
 : selectCard(player, suit, trick);
@@ -153,9 +154,13 @@ const e = await blockUntilEvent("userCardPlayed");
 return e.card;
 } // userCardPlayed
 
+export function humanPlayerPresent (state) {
+players[0].human = Boolean(state);
+console.debug("humanPlayerPresent: ", players[0]);
+} // humanPlayerPresent
+
 function isHumanPlayer (player) {return player.human;}
 export function isHumanPlayerPresent () {return players.filter(p => p.human).length > 0;}
-export function humanPlayerPresent (state) {players[0].human = Boolean(state);}
 
 function trickOrder (startIndex) {
 return reorder(startIndex).map(index => players[index]);

@@ -5,6 +5,10 @@
 
 <style>
 #log {position: fixed; bottom: 0%; left: 0%;}
+
+body:has(#human-player[type="checkbox"]:checked) .hand {display: block;}
+
+body:has(#human-player[type="checkbox"]) .hand {display: none;}
 </style>
 </head>
 <body>
@@ -12,12 +16,12 @@
 
 <p>Welcome to hearts></p>
 <p><button popoverTarget="rules" accessKey="r">Click this button to read the rules of the game.</button></p>
-<p><button popoverTarget="keyboardCommands" accessKey="/">Click this button to show all keyboard commands.</button></p>
+<p><button popoverTarget="keyboard-commands" accessKey="/">Click this button to show all keyboard commands.</button></p>
 
 <fieldset>
 <legend>Log</legend>
-<label>Show only current round <input type="checkbox" id="hideRounds"></label>
-<label>Show only current tricks <input type="checkbox" checked id="hideTricks"></label>
+<label>Show only current round <input type="checkbox" id="hide-rounds"></label>
+<label>Show only current tricks <input type="checkbox" checked id="hide-tricks"></label>
 </fieldset>
 
 <fieldset>
@@ -32,8 +36,9 @@ The log will be available so you can see all moves made, or you can just see sco
 label>hand:
 <br><select autofocus id="hand" accesskey="h">
 </select></label>
-<br><button id="startNewRound">Start new round</button>
+<br><button id="start-new-round">Start new round</button>
 </fieldset>
+<div><button id="start-new-game" accessKey="s">Start new game</button></div>
 
 <hr>
 <div role="log" id="log"></div>
@@ -45,12 +50,12 @@ import { not, dispatch } from "./utilities.js";
 import * as log from "./log.js";
 window.h = hearts, window.l = log;
 
-const $hideRounds = document.querySelector("#hideRounds");
-const $hideTricks = document.querySelector("#hideTricks");
+const $hideRounds = document.querySelector("#hide-rounds");
+const $hideTricks = document.querySelector("#hide-tricks");
 const $humanPlayerPresent = document.querySelector("#human-player");
-;
+const $startNewGame = document.querySelector("#start-new-game");
 const $hand = document.querySelector("#hand");
-const $startNewRound = document.querySelector("#startNewRound");
+const $startNewRound = document.querySelector("#start-new-round");
 
 /// start
 log.initialize(document.querySelector("#log"));
@@ -61,8 +66,10 @@ hearts.startNewGame();
 $hideTricks.checked? log.hidePreviousTricks() : log.showPreviousTricks();
 $hideRounds.checked? log.hidePreviousRounds() : log.showPreviousRounds();
 
-function startNewRound (e) {
-dispatch("userCommand", {command: "newRound", data: e});
+function startNewRound () {
+dispatch("userCommand", {command: "newRound"
+/*, data: e*/
+});
 } // startNewRound
 
 function displayHand (hand) {
@@ -71,9 +78,13 @@ fillSelectList($hand, hand);
 
 function setupEventListeners () {
 $humanPlayerPresent.addEventListener("change", e => {
-hearts.humanPlayerPresent(e.target.checked)
-document.querySelector(".hand").hidden = not(e.target.checked);
+hearts.humanPlayerPresent(e.target.checked);
+if (not(e.target.checked)) startNewRound();
+//document.querySelector(".hand").hidden = not(e.target.checked);
 });
+
+$startNewGame.addEventListener("click", e => hearts.startNewGame());
+
 $hideTricks.addEventListener("change", e => e.target.checked? log.hidePreviousTricks() : log.showPreviousTricks());
 $hideRounds.addEventListener("change", e => e.target.checked? log.hidePreviousRounds() : log.showPreviousRounds());
 
@@ -159,13 +170,13 @@ entry[1]? `data-${entry[0]}="${entry[1]}"`
 <button class="close" popovertarget="rules" popovertargetaction="hide">Close</button>
 </div>
 
-<h1 id="hearts">Hearts</h1>
+<h1>Hearts</h1>
 <p>Hearts is a trick taking game played with four players. Each player is dealt 13 cards. Each round begins with the player who holds the two of clubs. Play proceeds in a clockwise fashion till all four players have played a card.</p>
 <p>Each block of four cards is called a trick. The player who played the first card in the trick defines the suit for that trick. Each player in turn must play a card in that suit. Highest card in the trick wins the trick.  If a player does not have a card of the indicated suit, the player may throw any other card from her hand into the trick, but that card's rank will not count towards winning the trick.</p>
 <p>The first card in a trick must not be a heart, unless a heart has already been played in response to another trick, i.e. hearts may not be lead until hearts have been broken. Hearts may only be broken if a player cannot follow the suit played by the trick leader.</p>
-<h2 id="objective">Objective</h2>
+<h2>Objective</h2>
 <p>The objective of the game is to accrue the fewest points. The game ends when at least one player's score reaches or exceeds 100 points.</p>
-<h2 id="how-to-score">How to score</h2>
+<h2>How to score</h2>
 <p>When a trick is taken, the player adds the points in the trick to her score. Points are scored as follows:</p>
 <ul>
 <li>hearts are worth 1 point</li>
@@ -175,7 +186,7 @@ entry[1]? `data-${entry[0]}="${entry[1]}"`
 
 </dialog>
 
-<dialog popover id="keyboardCommands">
+<dialog popover id="keyboard-commands">
 <div class="actions">
 <button class="close" popoverTarget="keyboardCommands" popoverTargetAction="hide">Close</button>
 </div>
