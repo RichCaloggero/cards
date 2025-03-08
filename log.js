@@ -1,3 +1,5 @@
+import { isHumanPlayerPresent } from "./hearts.js";
+
 import { not } from "./utilities.js";
 var $log = null;
 var context = null;
@@ -22,7 +24,6 @@ export function roundStart (count) {
 $(".round-start.current")?.classList.remove("current");
 logMessage(`<div class="current round">\n</div>\n`);
 context = $(".current.round");
-prompt("Press control+enter to continue.");
 hideRounds? hidePreviousRounds() : showPreviousRounds();
 } // roundStart
 
@@ -77,7 +78,7 @@ for (const element of elements) element.hidden = not(element.hidden);
 
 export function prompt (text) {
 //console.debug("log.prompt: " + text);
-logMessage(`<p data-prompt>${text}</p>`);
+if (isHumanPlayerPresent()) logMessage(`<p data-prompt>${text}</p>`);
 } // prompt
 
 export function errorMessage (text) {
@@ -104,8 +105,13 @@ export function hidePreviousTricks () {
 const oldTricks = $$(".round:not(.current) .trick");
 hide(oldTricks);
 
+if (isHumanPlayerPresent()) {
 const tricks = $$(".current.round > .trick:not(.current)").slice(0,-1);
 hide(tricks);
+
+} else {
+hide($$(".current.round > .trick"));
+} // if
 
 hideTricks = true;
 } // hidePreviousTricks

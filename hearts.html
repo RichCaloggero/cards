@@ -20,6 +20,13 @@
 <label>Show only current tricks <input type="checkbox" checked id="hideTricks"></label>
 </fieldset>
 
+<fieldset>
+<legend>Unchecking this box will allow the computer to play against itself.
+The log will be available so you can see all moves made, or you can just see scores for each round.
+</legend>
+<label>Human player: <input id="human-player" type="checkbox" checked></label>
+</fieldset>
+
 <fieldset class="hand">
 <legend>Press control+enter to begin a round, enter to play a card, questionmark to show keyboard commands.</legend>
 label>hand:
@@ -40,11 +47,14 @@ window.h = hearts, window.l = log;
 
 const $hideRounds = document.querySelector("#hideRounds");
 const $hideTricks = document.querySelector("#hideTricks");
+const $humanPlayerPresent = document.querySelector("#human-player");
+;
 const $hand = document.querySelector("#hand");
 const $startNewRound = document.querySelector("#startNewRound");
 
 /// start
 log.initialize(document.querySelector("#log"));
+hearts.humanPlayerPresent($humanPlayerPresent.checked);
 
 setupEventListeners();
 hearts.startNewGame();
@@ -60,6 +70,10 @@ fillSelectList($hand, hand);
 } // displayHand
 
 function setupEventListeners () {
+$humanPlayerPresent.addEventListener("change", e => {
+hearts.humanPlayerPresent(e.target.checked)
+document.querySelector(".hand").hidden = not(e.target.checked);
+});
 $hideTricks.addEventListener("change", e => e.target.checked? log.hidePreviousTricks() : log.showPreviousTricks());
 $hideRounds.addEventListener("change", e => e.target.checked? log.hidePreviousRounds() : log.showPreviousRounds());
 

@@ -44,7 +44,6 @@ roundCount = 0;
 while (not(gameComplete())) {
 roundCount += 1;
 await playRound ();
-logMessage(displayScores(players));
 } // while
 
 logMessage(`<h2 class="winners">${displayWinners(players)}</h2>`);
@@ -52,7 +51,8 @@ logMessage(`<h2 class="winners">${displayWinners(players)}</h2>`);
 
 async function playRound () {
 log.roundStart(roundCount);
-await userStartsRound();
+logMessage("Press control+enter to start a new round.");
+if (isHumanPlayerPresent()) await userStartsRound();
 logMessage(`<h2>Starting round ${roundCount}.</h2>\n`);
 heartsBroken = false;
 seenQueenThisRound = false;
@@ -87,6 +87,7 @@ heartsBroken = "displayOnce";
 log.trickComplete();
 } // while roundNotComplete()
 
+logMessage(displayScores(players));
 log.roundComplete(roundCount);
 } // playRound
 
@@ -120,7 +121,7 @@ let error = null;
 do {
 if (isFirstTrickInRound) {
 //console.debug("first trick in round");
-card = cards.nameToCard("2c");
+card = cards.createCard(2, clubs);
 } else {
 card = isHumanPlayer(player)? await userCardPlayed()
 : selectCard(player, suit, trick);
@@ -152,7 +153,9 @@ const e = await blockUntilEvent("userCardPlayed");
 return e.card;
 } // userCardPlayed
 
-function isHumanPlayer (player) {return player === players[0];}
+function isHumanPlayer (player) {return player.human;}
+export function isHumanPlayerPresent () {return players.filter(p => p.human).length > 0;}
+export function humanPlayerPresent (state) {players[0].human = Boolean(state);}
 
 function trickOrder (startIndex) {
 return reorder(startIndex).map(index => players[index]);
