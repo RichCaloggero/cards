@@ -1,8 +1,8 @@
 import { not } from "./utilities.js";
 var $log = null;
-var hideRounds = false;
-var hideTricks = true;
 var context = null;
+var hideRounds = false;
+var  hideTricks = false;
 
 
 
@@ -15,7 +15,7 @@ context = $log;
 
 export function clear () {
 $log.innerHTML = "";
-trickCount = roundCount = 0;
+context = $log;
 } // clear
 
 export function roundStart (count) {
@@ -23,6 +23,7 @@ $(".round-start.current")?.classList.remove("current");
 logMessage(`<div class="current round">\n</div>\n`);
 context = $(".current.round");
 prompt("Press control+enter to continue.");
+hideRounds? hidePreviousRounds() : showPreviousRounds();
 } // roundStart
 
 export function roundComplete (roundCount) {
@@ -35,6 +36,7 @@ $log.querySelectorAll("[data-error], [data-prompt]").forEach(x => x.remove());
 $(".trick.current")?.classList.remove("current");
 logMessage(`<div class="current trick"><hr class="trick-start"></div>\n`);
 context = $(".current.trick");
+hideTricks? hidePreviousTricks() : showPreviousTricks();
 } // trickStart
 
 export function trickComplete () {
@@ -50,7 +52,7 @@ refresh($(".current.round > .current.trick"));
 } // refreshCurrentTrick
 
 export function refreshScores () {
-refresh($$(".current.round > .scores > *"));
+refresh($(".current.round > .scores"));
 } // refreshScores
 
 export function refresh(container) {
@@ -64,19 +66,14 @@ for (const element of elements) element.hidden = true;
 } // hide
 
 export function show (elements) {
+$log.removeAttribute("role");
 for (const element of elements) element.hidden = false;
+$log.setAttribute("role", "log");
 } // show
 
 export function toggle (elements) {
 for (const element of elements) element.hidden = not(element.hidden);
 } // toggle
-
-function _refresh (index1, index2) {
-const log = [...$log.children];
-const elements = log.slice(index1, index2);
-for (const element of elements) element.remove();
-for (const element of elements) $log.appendChild(element);
-} // refresh
 
 export function prompt (text) {
 //console.debug("log.prompt: " + text);
@@ -93,47 +90,30 @@ if (html[0] !== "<") html = `<p>${html}</p>\n`;
 $parent.insertAdjacentHTML("beforeEnd", html);
 } // logMessage
 
-export function setHideRounds (state) {
-hideRounds = state;
+export function hidePreviousRounds () {
+hide($$(".round:not(.current)"));
+hideRounds = true;
+} // hidePreviousRounds
 
-const elements = find(".round-start", ".round-start", x => x.matches(".round-start,.scores"));
+export function showPreviousRounds () {
+show($$(".round:not(.current)"));
+hideRounds = false;
+} // showPreviousRounds
 
-if (state) {
-hide(elements);
-} else {
-$log.removeAttribute("role");
- show(elements);
-$log.setAttribute("role", "status");
-} // if
-} // setHideRounds
+export function hidePreviousTricks () {
+const oldTricks = $$(".round:not(.current) .trick");
+hide(oldTricks);
 
-export function setHideTricks (state) {
-hideTricks = state;
+const tricks = $$(".current.round > .trick:not(.current)").slice(0,-1);
+hide(tricks);
 
-if (not($log.querySelector(".round-start"))) return;
+hideTricks = true;
+} // hidePreviousTricks
 
-const roundCount = $$(".round-start").length;
-const newTricks = find(".round-start", null, x => x.matches(".trick")).slice(0, -1);
-
-const oldTricks = roundCount > 1?
-find(".round-start", ".round-start", x => x.matches(".trick"))
-: [];
-debugger;
-
-
-const elements = oldTricks.concat(newTricks.length >= 3? newTricks : [])
-if (state) {
-hide(elements);
-} else {
-$log.removeAttribute("role");
-show(elements);
-$log.setAttribute("role", "status");
-} // if
-} // setHideTricks
-
-export function filter (selector) {
-return [...$log.children].filter(x => x.matches(selector));
-} // filter
+export function showPreviousTricks () {
+show($$(".trick"));
+hideTricks = false;
+} // showPreviousTricks
 
 function $ (selector, context = $log) {
 return context.querySelector(selector);

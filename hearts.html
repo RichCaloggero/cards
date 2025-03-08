@@ -48,6 +48,8 @@ log.initialize(document.querySelector("#log"));
 
 setupEventListeners();
 hearts.startNewGame();
+$hideTricks.checked? log.hidePreviousTricks() : log.showPreviousTricks();
+$hideRounds.checked? log.hidePreviousRounds() : log.showPreviousRounds();
 
 function startNewRound (e) {
 dispatch("userCommand", {command: "newRound", data: e});
@@ -58,8 +60,8 @@ fillSelectList($hand, hand);
 } // displayHand
 
 function setupEventListeners () {
-//$hideRounds.addEventListener("change", e => log.setHideRounds(e.target.checked));
-//$hideTricks.addEventListener("change", e => log.setHideTricks(e.target.checked));
+$hideTricks.addEventListener("change", e => e.target.checked? log.hidePreviousTricks() : log.showPreviousTricks());
+$hideRounds.addEventListener("change", e => e.target.checked? log.hidePreviousRounds() : log.showPreviousRounds());
 
 $hand.addEventListener("click", e => e.target.selectedOptions.length > 0? dispatch("userCardPlayed", {card: JSON.parse(e.target.selectedOptions[0].value)}) : "");
 $startNewRound.addEventListener("click", startNewRound);
