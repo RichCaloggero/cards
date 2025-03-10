@@ -12,16 +12,19 @@ body:has(#human-player[type="checkbox"]) .hand {display: none;}
 </style>
 </head>
 <body>
+<div class="description">
+
 <h1>Hearts</h1>
 
 <p>Welcome to hearts></p>
 <p><button popoverTarget="rules" accessKey="r">Click this button to read the rules of the game.</button></p>
 <p><button popoverTarget="keyboard-commands" accessKey="/">Click this button to show all keyboard commands.</button></p>
+</div>
 
 <fieldset>
 <legend>Log</legend>
-<label>Show only current round <input type="checkbox" id="hide-rounds"></label>
-<label>Show only current tricks <input type="checkbox" checked id="hide-tricks"></label>
+<label>Show only current round <input type="checkbox" id="hide-rounds" checked></label>
+<label>Show only current tricks <input type="checkbox" id="hide-tricks" checked></label>
 </fieldset>
 
 <fieldset>
@@ -34,14 +37,70 @@ The log will be available so you can see all moves made, or you can just see sco
 <fieldset class="hand">
 <legend>Press control+enter to begin a round, enter to play a card, questionmark to show keyboard commands.</legend>
 label>hand:
-<br><select autofocus id="hand" accesskey="h">
+<br><select rows="13" autofocus id="hand" accesskey="h">
 </select></label>
 <br><button id="start-new-round">Start new round</button>
+<button id="start-new-game" accessKey="s">Start new game</button>
 </fieldset>
-<div><button id="start-new-game" accessKey="s">Start new game</button></div>
 
 <hr>
 <div role="log" id="log"></div>
+
+
+<dialog popover id="rules">
+<div class="actions">
+<button class="close" popovertarget="rules" popovertargetaction="hide">Close</button>
+</div>
+
+<h1>Hearts</h1>
+<p>Hearts is a trick taking game played with four players. Each player is dealt 13 cards. Each round begins with the player who holds the two of clubs. Play proceeds in a clockwise fashion till all four players have played a card.</p>
+<p>Each block of four cards is called a trick. The player who played the first card in the trick defines the suit for that trick. Each player in turn must play a card in that suit. Highest card in the trick wins the trick.  If a player does not have a card of the indicated suit, the player may throw any other card from her hand into the trick, but that card's rank will not count towards winning the trick.</p>
+<p>The first card in a trick must not be a heart, unless a heart has already been played in response to another trick, i.e. hearts may not be lead until hearts have been broken. Hearts may only be broken if a player cannot follow the suit played by the trick leader.</p>
+<h2>Objective</h2>
+<p>The objective of the game is to accrue the fewest points. The game ends when at least one player's score reaches or exceeds 100 points.</p>
+<h2>How to score</h2>
+<p>When a trick is taken, the player adds the points in the trick to her score. Points are scored as follows:</p>
+<ul>
+<li>hearts are worth 1 point</li>
+<li>queen of spades is worth 13 points</li>
+<li>if a player takes all 13 hearts and the queen of spades, they "shoot the moon", and they either subtract 26 points from their score, or add 26 points to everyone else's score, whichever they choose</li>
+</ul>
+
+</dialog>
+
+<dialog popover id="keyboard-commands">
+<div class="actions">
+<button class="close" popoverTarget="keyboardCommands" popoverTargetAction="hide">Close</button>
+</div>
+<h1>Keyboard Commands</h1>
+
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Enter</td>
+<td>Play currently selected card in your hand</td>
+</tr>
+<tr>
+<td>control+enter</td>
+<td>begins new round of 13 tricks</td>
+</tr>
+<tr>
+<td>shift+enter</td>
+<td>repeats all cards played so far in current trick</td>
+</tr>
+<tr>
+<td>control+shift+enter</td>
+<td>repeats last scores displayed which might not be current)</td>
+</tr>
+</tbody>
+</table>
+</dialog>
 
 <script type="module">
 import * as hearts from "./hearts.js";
@@ -58,10 +117,10 @@ const $hand = document.querySelector("#hand");
 const $startNewRound = document.querySelector("#start-new-round");
 
 /// start
-log.initialize(document.querySelector("#log"));
-hearts.humanPlayerPresent($humanPlayerPresent.checked);
 
 setupEventListeners();
+log.initialize(document.querySelector("#log"));
+hearts.humanPlayerPresent($humanPlayerPresent.checked);
 hearts.startNewGame();
 $hideTricks.checked? log.hidePreviousTricks() : log.showPreviousTricks();
 $hideRounds.checked? log.hidePreviousRounds() : log.showPreviousRounds();
@@ -138,7 +197,7 @@ $list.add(new Option(cards.displayCard(item), JSON.stringify(item)));
 return $list;
 } // fillSelectList
 
-function displayScores (players) {
+/*function displayScores (players) {
 logMessage("scores:");
 if (players.every(p => p.score === 0)) logMessage("No score yet.");
 else logMessage(
@@ -160,65 +219,11 @@ entry[1]? `data-${entry[0]}="${entry[1]}"`
 ).join(" ")
 ).join(" ");
 } // processOptions
+*/
 
 //alert("main module loaded");
-
 </script>
 
-<dialog popover id="rules">
-<div class="actions">
-<button class="close" popovertarget="rules" popovertargetaction="hide">Close</button>
-</div>
 
-<h1>Hearts</h1>
-<p>Hearts is a trick taking game played with four players. Each player is dealt 13 cards. Each round begins with the player who holds the two of clubs. Play proceeds in a clockwise fashion till all four players have played a card.</p>
-<p>Each block of four cards is called a trick. The player who played the first card in the trick defines the suit for that trick. Each player in turn must play a card in that suit. Highest card in the trick wins the trick.  If a player does not have a card of the indicated suit, the player may throw any other card from her hand into the trick, but that card's rank will not count towards winning the trick.</p>
-<p>The first card in a trick must not be a heart, unless a heart has already been played in response to another trick, i.e. hearts may not be lead until hearts have been broken. Hearts may only be broken if a player cannot follow the suit played by the trick leader.</p>
-<h2>Objective</h2>
-<p>The objective of the game is to accrue the fewest points. The game ends when at least one player's score reaches or exceeds 100 points.</p>
-<h2>How to score</h2>
-<p>When a trick is taken, the player adds the points in the trick to her score. Points are scored as follows:</p>
-<ul>
-<li>hearts are worth 1 point</li>
-<li>queen of spades is worth 13 points</li>
-<li>if a player takes all 13 hearts and the queen of spades, they "shoot the moon", and they either subtract 26 points from their score, or add 26 points to everyone else's score, whichever they choose</li>
-</ul>
-
-</dialog>
-
-<dialog popover id="keyboard-commands">
-<div class="actions">
-<button class="close" popoverTarget="keyboardCommands" popoverTargetAction="hide">Close</button>
-</div>
-<h1>Keyboard Commands</h1>
-
-<table>
-<thead>
-<tr>
-<th>Key</th>
-<th>Action</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Enter</td>
-<td>Play currently selected card in your hand</td>
-</tr>
-<tr>
-<td>control+enter</td>
-<td>begins new round of 13 tricks</td>
-</tr>
-<tr>
-<td>shift+enter</td>
-<td>repeats all cards played so far in current trick</td>
-</tr>
-<tr>
-<td>control+shift+enter</td>
-<td>repeats last scores displayed which might not be current)</td>
-</tr>
-</tbody>
-</table>
-
-</dialog>
 </body>
 </html>

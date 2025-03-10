@@ -40,6 +40,7 @@ playGame();
 } // startNewGame
 
 async function playGame () {
+log.clear();
 roundCount = 0;
 
 while (not(gameComplete())) {
@@ -51,9 +52,12 @@ logMessage(`<h2 class="winners">${displayWinners(players)}</h2>`);
 } // playGame
 
 async function playRound () {
+if (isHumanPlayerPresent()) {
+log.prompt("Press control+enter to start a new round.");
+await userStartsRound();
+} // if
 log.roundStart(roundCount);
-logMessage("Press control+enter to start a new round.");
-if (isHumanPlayerPresent()) await userStartsRound();
+
 logMessage(`<h2>Starting round ${roundCount}.</h2>\n`);
 heartsBroken = false;
 seenQueenThisRound = false;
@@ -154,13 +158,7 @@ const e = await blockUntilEvent("userCardPlayed");
 return e.card;
 } // userCardPlayed
 
-export function humanPlayerPresent (state) {
-players[0].human = Boolean(state);
-console.debug("humanPlayerPresent: ", players[0]);
-} // humanPlayerPresent
 
-function isHumanPlayer (player) {return player.human;}
-export function isHumanPlayerPresent () {return players.filter(p => p.human).length > 0;}
 
 function trickOrder (startIndex) {
 return reorder(startIndex).map(index => players[index]);
@@ -241,12 +239,15 @@ return getRidOfQueenStrategy;
 */
 } else {
 if (showStrategy) logMessage(`${player.name} is ducking...`);
-return chooseDuckingStrategy();
+return chooseDuckingStrategy(player);
 } // if
 } // chooseStrategy
 
-function chooseDuckingStrategy (probability = 1) {
-return Math.random() < probability? duckingStrategy1 : duckingStrategy2;
+function chooseDuckingStrategy (player, probability = 1) {
+return (player === players[0] || player === players[1])?
+duckingStrategy1 : duckingStrategy2;
+
+//return Math.random() < probability? duckingStrategy1 : duckingStrategy2;
 } // chooseDuckingStrategy
 
 function executeStrategy (strategy, hand, suit, trick) {
@@ -270,19 +271,24 @@ const [myClubs, mySpades, myHearts, myDiamonds] = myHand;
 const myOtherSpades = mySpades.filter(card => card.rank !== queen);
 const hasQueenOfSpades = mySpades.length !== myOtherSpades.length;
 
+// if only one card in hand, just return it
 if (hand.length === 1 ) return hand[0];
 
 if (isFirstCardInTrick) {
-const list = hasQueenOfSpades? shortestList(myClubs, myDiamonds)
-: seenQueenThisRound? shortestList(myClubs, myDiamonds, mySpades)
-: cards.findLowestCardInList(mySpades)?.rank < queen? mySpades
-: heartsBroken? myHearts
-: hand.filter(card => card.suit !== hearts);
+// which list to operate on
+const list = shortestList(...
+hasQueenOfSpades && heartsBroken? [myHearts, myClubs, myDiamonds]
+: hasQueenOfSpades? [myClubs, myDiamonds]
+: heartsBroken && seenQueenThisRound? [myClubs, myDiamonds, mySpades, myHearts]
+: seenQueenThisRound? [myClubs, myDiamonds, mySpades]
+: cards.findLowestCardInList(mySpades)?.rank < queen? [mySpades]
+: heartsBroken? [myHearts, myClubs, myDiamonds, mySpades]
+: [myClubs, myDiamonds, mySpades]
+);
 
 return (
-hasQueenOfSpades? cards.findHighestCardInList(list) 
-: list[0]?.[0]?.suit === hearts? cards.findLowestCardInList(list)
-: cards.findLowestCardInList(list)
+hasQueenOfSpades || seenQueenThisRound? cards.findHighestCardInList(list) 
+:  cards.findLowestCardInList(list)
 ) || cards.findLowestCardInList(hand);
 
 } else {
@@ -307,6 +313,10 @@ return hasQueenOfSpades? (cards.findHighestCardInList(myOtherSpades) || queenOfS
 
 function duckingStrategy2 (hand, suit, trick) {
 const isFirstCardInTrick = trick.length === 0;
+const hasQueenOfSpades = hand.find(card => cards.isCard(card, queenOfSpades));
+
+// if only one card in hand, just return it
+if (hand.length === 1 ) return hand[0];
 
 if (isFirstCardInTrick) {
 
@@ -314,13 +324,17 @@ if (heartsBroken) {
 if (cards.rank(cards.hasSuit(hearts, hand), 2, 4).length > 0) return cards.findLowestCardInSuit(hearts, hand);
 } // if
 
-return cards.findLowestCardInList(shortestSuitInList(hand.filter(card => card.suit !== hearts)))
+return cards.findLowestCardInList(shortestSuitInList(hand.filter(card => card.suit !== hearts && card.suit !== spades)))
 || cards.findLowestCardInList(hand);
 
 } else {
 return cards.findLowestCardInSuit(suit, hand)
-|| cards.findHighestCardInSuit(hearts, hand)
-|| cards.findLowestCardInList(hand);
+|| (
+    hasQueenOfSpades? queenOfSpades
+: (
+cards.findHighestCardInSuit(hearts, hand)
+|| cards.findLowestCardInList(hand)
+));
 } // if
 } // duckingStrategy2
 
@@ -625,13 +639,13 @@ function hasChanceOfShootingTheMoon (hand) {
 return cards.rank(hand, jack).length >= 8 && cards.rank(cards.hasSuit(hearts, hand), queen).length === 3;
 } // hasChanceOfShootingTheMoon 
 
-function _hasChanceOfShootingTheMoon (hand) {
-return cards.hasRank(jack, ace, cards.hasSuit(hearts, hand)).length === 4
-&& cards.hasRank(queen, ace, cards.hasSuit(spades, hand)).length === 3
-&& (cards.hasRank(queen, ace, cards.hasSuit(clubs, hand)).length === 3
-|| cards.hasRank(queen, ace, cards.hasSuit(diamonds, hand)).length === 3 
-);
-} // _hasChanceOfShootingTheMoon
+
+export function humanPlayerPresent (state) {
+    players[0].human = Boolean(state);
+    } // humanPlayerPresent
+
+function isHumanPlayer (player) {return player.human;}
+export function isHumanPlayerPresent () {return players.filter(p => p.human).length > 0;}
 
 
 //alert("hearts module loaded");

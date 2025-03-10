@@ -20,8 +20,12 @@ $log.innerHTML = "";
 context = $log;
 } // clear
 
+export function empty () {
+    return $log.innerHTML === "" //&& context === $log;
+} // empty
+
 export function roundStart (count) {
-$(".round-start.current")?.classList.remove("current");
+$(".round.current")?.classList.remove("current");
 logMessage(`<div class="current round">\n</div>\n`);
 context = $(".current.round");
 hideRounds? hidePreviousRounds() : showPreviousRounds();
@@ -67,9 +71,9 @@ for (const element of elements) element.hidden = true;
 } // hide
 
 export function show (elements) {
-$log.removeAttribute("role");
+//$log.removeAttribute("role");
 for (const element of elements) element.hidden = false;
-$log.setAttribute("role", "log");
+//$log.setAttribute("role", "log");
 } // show
 
 export function toggle (elements) {
