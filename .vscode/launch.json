@@ -1,0 +1,22 @@
+
+{
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "name": "Launch hearts",
+            "type": "firefox",
+            "request": "launch",
+            "reAttach": true,
+"clearConsoleOnReload": true,
+
+            "reloadOnChange": {
+                "watch": [ "${workspaceFolder}/**/*.js", "${workspaceFolder}/**/*.html" ],
+                "ignore": [ "${workspaceFolder}/node_modules/**" ]
+            },                        
+            "url": "http://localhost:3000/hearts.html",
+            "webRoot": "${workspaceFolder}"
+        }
+
+    ]
+}

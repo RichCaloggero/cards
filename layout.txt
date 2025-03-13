@@ -1,0 +1,9 @@
+I want you to create a stylesheet for a web app. The app is a card game. I will list the various panels  and how I want them arranged along with their css classes. Your job is to create a stylesheet that implements my description.
+
+There shall be four main sections:
+
+- .description (full width, top of the screen) describes the game;
+- .hand (25% width, middel left of screen);
+- .controls (75% width, middle right of the screen) contains controls for manipulating the game;
+-  .log (full width, bottom of the screen) contains the log of cards played by the user and the computer;
+

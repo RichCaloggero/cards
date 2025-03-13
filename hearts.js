@@ -26,8 +26,9 @@ export const players= [
 let heartsBroken = false;
 let roundCount = 0;
 let seenQueenThisRound = false;
+let userQuit = "";
 
-export function startNewGame () {
+export async function startNewGame () {
 //console.debug("starting game...");
 
 for (const player of players) {
@@ -36,17 +37,26 @@ player.hand = [];
 player.tricks = [];
 } // for
 
-playGame();
+while (await playGame() === "restart");
+
+log.logMessage("Done.");
 } // startNewGame
+
 
 async function playGame () {
 log.clear();
 roundCount = 0;
 
+try {
 while (not(gameComplete())) {
 roundCount += 1;
 await playRound ();
 } // while
+
+} catch (e) {
+log.logMessage(e);
+return e;
+} // try
 
 logMessage(`<h2 class="winners">${displayWinners(players)}</h2>`);
 } // playGame
@@ -154,8 +164,10 @@ setTimeout(() => {
 //console.debug("hearts.your turn");
 log.prompt("Your turn.");
 }, 400);
-const e = await blockUntilEvent("userCardPlayed");
-return e.card;
+let e;
+while (e = await blockUntilEvent("command")) {
+if (e.command === "playCard") return e.card;
+} // while
 } // userCardPlayed
 
 
@@ -534,7 +546,7 @@ return trick.map(x => x.card);
 } // cardsInTrick
 
 function gameComplete () {
-return highestScore() >= 100;
+return userQuit || highestScore() >= 100;
 } // gameComplete
 
 function roundComplete () {
@@ -562,7 +574,7 @@ return `${winners.map(p => p.name).join(", and ")} won with score ${winners[0].s
 export async function userStartsRound () {
 //console.debug("userStartsRound:");
 let e;
-while (e = await blockUntilEvent("userCommand")) {
+while (e = await blockUntilEvent("command")) {
 //console.debug(e);
 if (e.command === "newRound") return;
 } // while

@@ -105,7 +105,7 @@ label>hand:
 <script type="module">
 import * as hearts from "./hearts.js";
 import * as cards from "./cards.js";
-import { not, dispatch } from "./utilities.js";
+import { not, dispatch, blockUntilEvent } from "./utilities.js";
 import * as log from "./log.js";
 window.h = hearts, window.l = log;
 
@@ -126,9 +126,7 @@ $hideTricks.checked? log.hidePreviousTricks() : log.showPreviousTricks();
 $hideRounds.checked? log.hidePreviousRounds() : log.showPreviousRounds();
 
 function startNewRound () {
-dispatch("userCommand", {command: "newRound"
-/*, data: e*/
-});
+dispatch("command", {command: "newRound"});
 } // startNewRound
 
 function displayHand (hand) {
@@ -139,15 +137,17 @@ function setupEventListeners () {
 $humanPlayerPresent.addEventListener("change", e => {
 hearts.humanPlayerPresent(e.target.checked);
 if (not(e.target.checked)) startNewRound();
-//document.querySelector(".hand").hidden = not(e.target.checked);
 });
 
-$startNewGame.addEventListener("click", e => hearts.startNewGame());
+$startNewGame.addEventListener("click", async e => {
+dispatch("command", {quit: "restart"});
+
+});
 
 $hideTricks.addEventListener("change", e => e.target.checked? log.hidePreviousTricks() : log.showPreviousTricks());
 $hideRounds.addEventListener("change", e => e.target.checked? log.hidePreviousRounds() : log.showPreviousRounds());
 
-$hand.addEventListener("click", e => e.target.selectedOptions.length > 0? dispatch("userCardPlayed", {card: JSON.parse(e.target.selectedOptions[0].value)}) : "");
+$hand.addEventListener("click", e => e.target.selectedOptions.length > 0? dispatch("command", {command: "playCard", card: JSON.parse(e.target.selectedOptions[0].value)}) : "");
 $startNewRound.addEventListener("click", startNewRound);
 
 document.addEventListener("keydown", e => {

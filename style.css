@@ -1,0 +1,197 @@
+/* css v3 using percentages rather than px units for height */
+/* Ensure the body and html take up 100% of the height */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Description section (15% of the body height) */
+  .description {
+    width: 100%;
+    background-color: #f4f4f4;
+    padding: 20px;
+    text-align: center;
+    font-size: 1.5em;
+    font-weight: bold;
+    box-sizing: border-box;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 15%; /* 15% of the body height */
+    z-index: 10;
+  }
+  
+  /* Hand section (35% of the body height) */
+  .hand {
+    width: 25%;
+    background-color: #e1e1e1;
+    padding: 10px;
+    box-sizing: border-box;
+    position: absolute;
+    top: 15%; /* Starts right after the description */
+    height: 35%; /* 35% of the body height */
+    overflow-y: auto;
+    float: left;
+  }
+  
+  /* Controls section (35% of the body height) */
+  .controls {
+    width: 75%;
+    background-color: #d1d1d1;
+    padding: 10px;
+    box-sizing: border-box;
+    position: absolute;
+    top: 15%; /* Starts right after the description */
+    height: 35%; /* 35% of the body height */
+    overflow-y: auto;
+    float: left;
+  }
+  
+  /* Log section (50% of the body height) */
+  .log {
+    width: 100%;
+    background-color: #333;
+    color: white;
+    padding: 15px;
+    box-sizing: border-box;
+    text-align: center;
+    font-size: 1em;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    height: 50%; /* 50% of the body height */
+    overflow-y: auto;
+    font-family: Courier, monospace;
+  }
+  
+
+/* Global styling for body and basic layout v2 */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  
+  /* Description section (fixed to the top of the screen) */
+  .description {
+    width: 100%;
+    background-color: #f4f4f4;
+    padding: 20px;
+    text-align: center;
+    font-size: 1.5em;
+    /*font-weight: bold;*/
+    box-sizing: border-box;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 10; /* Ensures it stays above other content */
+  }
+  
+  /* Hand section (25% width, middle left of the screen) */
+  .hand {
+    width: 25%;
+    background-color: #e1e1e1;
+    padding: 10px;
+    box-sizing: border-box;
+    margin-top: 80px; /* Adjusted to make room for the fixed description */
+    height: calc(100vh - 120px); /* Full screen height minus description and log */
+    overflow-y: auto;
+    float: left;
+  }
+  
+  /* Controls section (75% width, middle right of the screen) */
+  .controls {
+    width: 75%;
+    background-color: #d1d1d1;
+    padding: 10px;
+    box-sizing: border-box;
+    margin-top: 80px; /* Adjusted to make room for the fixed description */
+    height: calc(100vh - 120px); /* Full screen height minus description and log */
+    overflow-y: auto;
+    float: left;
+  }
+  
+  /* Log section (fixed to the bottom of the screen and scrollable) */
+  .log {
+    width: 100%;
+    background-color: #333;
+    color: white;
+    padding: 15px;
+    box-sizing: border-box;
+    text-align: center;
+    font-size: 1em;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    font-family: Courier, monospace;
+    overflow-y: auto;
+    max-height: 200px; /* Adjust as needed for the height of the log */
+  }
+  
+
+/* Global styling for body and basic layout - v1 */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* Description section (full width, top of the screen) */
+.description {
+  width: 100%;
+  background-color: #f4f4f4;
+  padding: 20px;
+  text-align: center;
+  font-size: 1.5em;
+  /*font-weight: bold;*/
+  box-sizing: border-box;
+}
+
+/* Hand section (25% width, middle left of the screen) */
+.hand {
+  width: 25%;
+  background-color: #e1e1e1;
+  padding: 10px;
+  box-sizing: border-box;
+  float: left;
+  height: calc(100vh - 120px); /* Full screen height minus description and log */
+  overflow-y: auto;
+  margin-top: 20px;
+}
+
+/* Controls section (75% width, middle right of the screen) */
+.controls {
+  width: 75%;
+  background-color: #d1d1d1;
+  padding: 10px;
+  box-sizing: border-box;
+  float: left;
+  height: calc(100vh - 120px); /* Full screen height minus description and log */
+  margin-top: 20px;
+  overflow-y: auto;
+}
+
+/* Log section (full width, bottom of the screen) */
+.log {
+  width: 100%;
+  background-color: #333;
+  color: white;
+  padding: 15px;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 1em;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  font-family: Courier, monospace;
+}

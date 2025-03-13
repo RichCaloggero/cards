@@ -1,6 +1,3 @@
-export function sum (a) {
-return a.reduce((a,x) => a += x, 0);
-} // sum
 
 export function userMessage (text, options) {
 dispatch("userMessage", {message: text, options});
@@ -18,7 +15,15 @@ document.dispatchEvent(event);
 } // dispatch
 
 export async function blockUntilEvent(event, target = document) {
-return new Promise(resolve => target.addEventListener(event, e => resolve(e), {passive: true, once: true}));
+return new Promise((resolve, reject) => {
+target.addEventListener(event, e => {
+if (    e.quit) {
+//dispatch("quitReceived");
+return reject(e.quit);
+} // if
+return resolve(e);
+}, {passive: true, once: true});
+});
 } // blockUntilEvent
 
 export async function amap(arr,fun) {
@@ -32,6 +37,11 @@ if (conditions.length < n) return false;
 const count = conditions.reduce((n, q) => n = q? n+1 : n);
 return count >= n;
 } // atLeast
+
+
+export function sum (a) {
+return a.reduce((a,x) => a += x, 0);
+} // sum
 
 export function not (x) {return !x;}
 //alert("utilities module loaded");
