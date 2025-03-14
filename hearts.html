@@ -34,6 +34,11 @@ The log will be available so you can see all moves made, or you can just see sco
 <label>Human player: <input id="human-player" type="checkbox" checked></label>
 </fieldset>
 
+<fieldset>
+<legend>Run multiple games</legend>
+<label>Games to run: <input type="number" id="run-multiple-games" accessKey="m" value="1"></label>
+</fieldset>
+
 <fieldset class="hand">
 <legend>Press control+enter to begin a round, enter to play a card, questionmark to show keyboard commands.</legend>
 label>hand:
@@ -109,21 +114,43 @@ import { not, dispatch, blockUntilEvent } from "./utilities.js";
 import * as log from "./log.js";
 window.h = hearts, window.l = log;
 
+const $log = document.querySelector("#log");
 const $hideRounds = document.querySelector("#hide-rounds");
 const $hideTricks = document.querySelector("#hide-tricks");
 const $humanPlayerPresent = document.querySelector("#human-player");
 const $startNewGame = document.querySelector("#start-new-game");
+const $runMultipleGames = document.querySelector("#run-multiple-games");
 const $hand = document.querySelector("#hand");
 const $startNewRound = document.querySelector("#start-new-round");
 
 /// start
 
 setupEventListeners();
-log.initialize(document.querySelector("#log"));
+log.initialize($log);
 hearts.humanPlayerPresent($humanPlayerPresent.checked);
 hearts.startNewGame();
 $hideTricks.checked? log.hidePreviousTricks() : log.showPreviousTricks();
 $hideRounds.checked? log.hidePreviousRounds() : log.showPreviousRounds();
+
+async function startNewGame () {
+if (hearts.isGameRunning()) {
+dispatch("command", {command: "quit"});
+let e =await blockUntilEvent("gameComplete");
+console.debug(`${e.status}: ${e.reason.command}`);
+
+if (e.status !== "error" || e.reason?.command !== "quit") {
+$log.insertAdjacentHTML("beforeEnd", `<h2>Aborted: ${e.status}; ${e.reason?.command}</h2>`);
+return;
+} // if
+} // if
+
+hearts.humanPlayerPresent($humanPlayerPresent.checked);
+$hand.innerHTML = "";
+$hand.focus();
+e = await hearts.startNewGame();
+console.debug(e);
+$log.insertAdjacentHTML("beforeEnd", `<h2>${e.status}: ${e.roundCount} rounds played.</h2>`);
+} // startNewGame
 
 function startNewRound () {
 dispatch("command", {command: "newRound"});
@@ -135,13 +162,20 @@ fillSelectList($hand, hand);
 
 function setupEventListeners () {
 $humanPlayerPresent.addEventListener("change", e => {
-hearts.humanPlayerPresent(e.target.checked);
-if (not(e.target.checked)) startNewRound();
+startNewGame();
 });
 
-$startNewGame.addEventListener("click", async e => {
-dispatch("command", {quit: "restart"});
+$startNewGame.addEventListener("click", startNewGame);
 
+$runMultipleGames.addEventListener("click", e => {
+dispatch("command", {quit: "done"});
+setTimeout(async () => {
+await displayStatistics(await hearts.runMultipleGames(Number(e.target.value)));
+});
+}); // multiple games
+
+$runMultipleGames.addEventListener("keydown", e => {
+if (e.key === " " || e.key === "Enter") e.target.click();
 });
 
 $hideTricks.addEventListener("change", e => e.target.checked? log.hidePreviousTricks() : log.showPreviousTricks());
@@ -196,6 +230,39 @@ $list.add(new Option(cards.displayCard(item), JSON.stringify(item)));
 
 return $list;
 } // fillSelectList
+
+async function displayStatistics (data) {
+console.debug(data);
+const
+min = [200, 200, 200, 200],
+max = [0, 0, 0, 0],
+sum = [0, 0, 0, 0];
+
+$log.insertAdjacentHTML("beforeEnd", `<h2>${data.length} games completed.</h2>`);
+for (const game of data) {
+for (let p=0; p<4; p++) {
+const player = game[p];
+const score = player.score;
+min[p] = Math.min(min[p], score);
+max[p] = Math.max(max[p], score);
+sum[p] += score;
+} // for
+} // for
+
+$log.insertAdjacentHTML("beforeEnd",
+`<table>
+<tr><th>player</th> <th>average</th> <th>min</th> <th>max</th> <th>strategy</th></tr>
+${data[0].map(
+(player, p) => `<tr>
+<th>${player.name}</th>
+<td>${sum[p]/data.length}</td>
+<td>${min[p]}</td>
+<td>${max[p]}</td>
+<td>${player.strategy}</td>
+</tr>
+`).join("\n")}
+</table>`);
+} // displayStatistics
 
 /*function displayScores (players) {
 logMessage("scores:");

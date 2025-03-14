@@ -108,7 +108,7 @@ const list = [];
 for (const card of dealCards(dealer, count)) hand[card.suit].push(card);
 
 for (let suit of hand) {
-suit = suit.sort(highestFirst);
+suit = suit.toSorted(highestFirst);
 for (const card of suit) list.push(card);
 } // suit
 
@@ -156,7 +156,7 @@ return hasSuit(suit, list).length <= n;
 
 
 export function isCard (card1, card2) {
-return card1.rank === card2.rank && card1.suit === card2.suit;
+return card1?.rank === card2?.rank && card1?.suit === card2?.suit;
 } // isCard
 
 export function nameToCard (name) {
@@ -168,19 +168,19 @@ return {rank, suit};
 } // nameToCard
 
 export function findHighestCardInList (list) {
-return (list || []).sort(highCardFirst)[0];
+return (list || []).toSorted(highCardFirst)[0];
 } // findHighestCardInList
 
 export function findLowestCardInList (list) {
-return (list || []).sort(lowCardFirst)[0];
+return (list || []).toSorted(lowCardFirst)[0];
 } // findLowestCardInList
 
 export function findHighestCardInSuit(suit, list) {
-return hasSuit(suit, list).sort(highCardFirst)[0];
+return hasSuit(suit, list).toSorted(highCardFirst)[0];
 } // findHighestCardInSuit
 
 export function findLowestCardInSuit(suit, list) {
-return hasSuit(suit, list).sort(lowCardFirst)[0];
+return hasSuit(suit, list).toSorted(lowCardFirst)[0];
 } // findLowestCardInSuit
 
 export function highCardFirst (c1, c2) {

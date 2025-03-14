@@ -18,47 +18,74 @@ const twoOfClubs = cards.createCard(2, clubs);
 
 const deck = cards.createDeck();
 export const players= [
-{name: "player 1", hand: [], score: 0, tricks: [], strategy: null},
-{name: "player 2", hand: [], score: 0, tricks: [], strategy: null},
-{name: "player 3", hand: [], score: 0, tricks: [], strategy: null},
-{name: "player 4", hand: [], score: 0, tricks: [], strategy: null}
+{name: "player1"},
+{name: "player2"},
+{name: "player3"},
+{name: "player4"}
 ]; // players
 let heartsBroken = false;
 let roundCount = 0;
 let seenQueenThisRound = false;
 let userQuit = "";
+let gameRunning = false;
 
 export async function startNewGame () {
-//console.debug("starting game...");
+const result = await playGame();
+dispatch("gameComplete", result);
+return result;
+} // startNewGame
+
+export async function runMultipleGames (count) {
+humanPlayerPresent(false);
+log.initialize(console.log, false);
+const result = [];
+
+for (let i=0; i<count; i++) {
+result[i] = await playGame(i);
+} // for
+
+return result;
+} // playMultipleGames
+
+async function playGame (gameCount = 1) {
+log.clear();
+roundCount = 0;
 
 for (const player of players) {
 player.score = 0;
+player.shootingHandCount = 0;
 player.hand = [];
 player.tricks = [];
+player.strategy = null;
 } // for
 
-while (await playGame() === "restart");
+gameRunning = true;
+let result = null;
 
-log.logMessage("Done.");
-} // startNewGame
-
-
-async function playGame () {
-log.clear();
-roundCount = 0;
+//console.debug("starting game...");
 
 try {
 while (not(gameComplete())) {
 roundCount += 1;
 await playRound ();
 } // while
+logMessage(`<h2 class="winners">${displayWinners(players)}</h2>`);
+
+result = {
+status: "ok", roundCount,
+players: players.map(p => ({name: p.name, score: p.score, strategy: p.strategy.name, shootingHandCount: p.shootingHandCount}))
+}; // result
 
 } catch (e) {
-log.logMessage(e);
-return e;
+log.logMessage(`error in round ${roundCount} of game ${gameCount}:\n${e}`);
+result = {
+status: "error",
+reason: e,
+players: null}; // result
 } // try
 
-logMessage(`<h2 class="winners">${displayWinners(players)}</h2>`);
+gameRunning = false;
+return result;
 } // playGame
 
 async function playRound () {
@@ -73,8 +100,11 @@ heartsBroken = false;
 seenQueenThisRound = false;
 //console.debug("starting round ", roundCount);
 dealNewRound(shootingHand);
+
+if (isHumanPlayerPresent()) {
 dispatch("updateHand", {hand: players[0].hand});
 if (queenAlert) logMessage(`${players.find(player => hasQueenOfSpades(player.hand)).name} has the queen!`);
+} // if
 
 const trickList = [];
 for (const player of players) {
@@ -94,7 +124,7 @@ log.currentTrick(`<p class="trick-info">${trickWinner.player.name} took ${displa
 
 if (heartsBroken && heartsBroken !== "displayOnce") {
 //console.debug("hearts.hearts broken...");
-log.currentTrick(`<p class="trick-info">Hearts have been broken.</p>\n`);
+if (isHumanPlayerPresent()) log.currentTrick(`<p class="trick-info">Hearts have been broken.</p>\n`);
 heartsBroken = "displayOnce";
 } // if
 
@@ -102,7 +132,11 @@ heartsBroken = "displayOnce";
 log.trickComplete();
 } // while roundNotComplete()
 
+//if (isHumanPlayerPresent()) {
 logMessage(displayScores(players));
+logMessage(`End of round ${roundCount}.`);
+//} // if
+
 log.roundComplete(roundCount);
 } // playRound
 
@@ -219,7 +253,7 @@ if (card.suit === hearts && not(onlyHearts) && not(heartsBroken)) return "Hearts
 
 } else {
 // follow suit
-const playerHasSuit = cards.findLowestCardInSuit(suit, player.hand);
+const playerHasSuit = player.hand.filter(card => card.suit === suit).length > 0;
 if (playerHasSuit && card.suit !== suit) return `You must follow suit; ${cards.suitNames[suit]} is in play.`;
 } // if
 } // if
@@ -231,7 +265,7 @@ if (index >= 0) {
 player.hand.splice(index, 1)[0];
 return "";
 } else {
-return "error: card ${displayCard(card)} not found in hand; this should not happen";
+throw new Error(`error: card ${cards.displayCard    (card)} not found in hand; this should not happen`);
 } // if
 } // playCard
 
@@ -240,17 +274,18 @@ return "error: card ${displayCard(card)} not found in hand; this should not happ
 
 function chooseStrategy (hand, suit, trick) {
 const player = players.find(p => p.hand === hand);
-if (showHand) logMessage(`${player.name} has: ${displayCards(player.hand)}`);
+if (isHumanPlayerPresent() && showHand) logMessage(`${player.name} has: ${displayCards(player.hand)}`);
 
 if (hasChanceOfShootingTheMoon(hand)) {
-if (showStrategy) logMessage(`${player.name} is attempting to shoot the moon.`);
+if (isHumanPlayerPresent() && showStrategy) logMessage(`${player.name} is attempting to shoot the moon.`);
+player.shootingHandCount += 1;
 return shootingStrategy;
 /*} else if (hasQueenOfSpades(hand)) {
 if (showStrategy) logMessage(`${player.name} is trying to get rid of the queen.`);
 return getRidOfQueenStrategy;
 */
 } else {
-if (showStrategy) logMessage(`${player.name} is ducking...`);
+if (isHumanPlayerPresent() && showStrategy) logMessage(`${player.name} is ducking...`);
 return chooseDuckingStrategy(player);
 } // if
 } // chooseStrategy
@@ -263,6 +298,7 @@ duckingStrategy1 : duckingStrategy2;
 } // chooseDuckingStrategy
 
 function executeStrategy (strategy, hand, suit, trick) {
+const player = players.find(p => p.hand === hand);
 try {
 return strategy(hand, suit, trick);
 } catch (e) {
@@ -443,12 +479,13 @@ const player = players.find(p => p.hand === hand);
 // if someone other than you took a trick this round, abandon shooting strategy
 const allPoints = players.filter(p => p !== player && calculatePointsThisRound(p));
 if (allPoints.length > 1) {
-player.strategy = hasQueenOfSpades(hand)? getRidOfQueenStrategy : duckingStrategy;
+player.strategy = chooseDuckingStrategy(player);
 return player.strategy(hand, suit, trick);
 } // if
 
 const myHand = organizeBySuit(hand);
-const mySuits = shortestList(...myHand).reverse();
+const mySuits = myHand.toSorted(shortestList).reverse();
+
 const [myClubs, mySpades, myHearts, myDiamonds] = myHand;
 const firstTrickInRound = hand.length === 13;
 const firstCardInTrick = trick.length === 0;
@@ -460,7 +497,7 @@ debugger;
 
 if (not(heartsBroken) && mySuits[0].suit === hearts) {
 mySuits.shift();
-mySuits.push(hearts);
+mySuits.push(myHearts);
 } // if
 
 if (firstCardInTrick) {
@@ -504,7 +541,7 @@ return players.findIndex(player => hasTwoOfClubs(player.hand));
 function assignTrick (trick) {
 //console.debug("assignTrick: ", trick);
 const suit = trick[0].card.suit;
-const player = trick.sort(trickHighCardFirst ).filter(item => item.card.suit === suit)[0].player;
+const player = trick.toSorted(trickHighCardFirst ).filter(item => item.card.suit === suit)[0].player;
 player.tricks.push(trick);
 //console.debug(`- ${player.name} took trick `, trick, " with suit ", suit);
 
@@ -546,7 +583,7 @@ return trick.map(x => x.card);
 } // cardsInTrick
 
 function gameComplete () {
-return userQuit || highestScore() >= 100;
+return highestScore() >= 100;
 } // gameComplete
 
 function roundComplete () {
@@ -566,7 +603,7 @@ ${players.map(p => `${p.name}: ${p.score}`).join("\n")}
 } // displayScores
 
 function displayWinners (players) {
-const all = players.sort((p1,p2) => p1.score < p2.score? -1 : 1);
+const all = players.toSorted((p1,p2) => p1.score < p2.score? -1 : 1);
 const winners = all.filter(p => p.score === all[0].score);
 return `${winners.map(p => p.name).join(", and ")} won with score ${winners[0].score}.`;
 } // displayWinners
@@ -586,13 +623,13 @@ return [0,1,2,3].map(suit => list.filter(card => card.suit === suit));
 
 function orderBySuit (suits, order = shortestSuitFirst) {
 return suits.map((list, suit) => ({suit, list}))
-.sort(order);
+.toSorted(order);
 } // orderBySuit
 
 function shortestSuitInList (list) {
 return organizeBySuit(list)
 .filter(list => list.length > 0)
-.sort((l1, l2) => l1.length < l2.length? -1 : 1)
+.toSorted((l1, l2) => l1.length < l2.length? -1 : 1)
 [0];
 } // shortestSuitInList
 
@@ -601,7 +638,7 @@ return orderLists(...lists)[0] || [];
 } // shortestList
 
 function orderLists (...lists) {
-return lists.sort((l1, l2) => l1.length <= l2.length? -1 : 1)
+return lists.toSorted((l1, l2) => l1.length <= l2.length? -1 : 1)
 .filter(l => l.length > 0);
 } // orderLists
 
@@ -618,7 +655,7 @@ return [0,1,2,3].map(suit => highCardStraight(suit, hand));
 } // findHighCardStraights
 
 function findHighCardStraight (suit, hand) {
-const all = cards.hasSuit(suit, hand).sort(cards.highCardFirst);
+const all = cards.hasSuit(suit, hand).toSorted(cards.highCardFirst);
 if (all.length > 0 && all[0].rank === ace || all[0].rank === king) {
 let rank = all[0].rank;
 return all.filter(card => card.rank === rank--);
@@ -653,11 +690,13 @@ return cards.rank(hand, jack).length >= 8 && cards.rank(cards.hasSuit(hearts, ha
 
 
 export function humanPlayerPresent (state) {
-    players[0].human = Boolean(state);
+players[0].human = Boolean(state);
     } // humanPlayerPresent
 
 function isHumanPlayer (player) {return player.human;}
 export function isHumanPlayerPresent () {return players.filter(p => p.human).length > 0;}
+
+export function isGameRunning () {return gameRunning;}
 
 
 //alert("hearts module loaded");

@@ -1,14 +1,4 @@
 
-export function userMessage (text, options) {
-dispatch("userMessage", {message: text, options});
-} // userMessage
-
-export function errorMessage (text) {
-dispatch("error", {message: text, options: ["info"]});
-} // errorMessage
-
-export function infoMessage (text) {return errorMessage(text);}
-
 export function dispatch (type, options) {
 const event = Object.assign(new Event(type), options);
 document.dispatchEvent(event);
@@ -17,13 +7,9 @@ document.dispatchEvent(event);
 export async function blockUntilEvent(event, target = document) {
 return new Promise((resolve, reject) => {
 target.addEventListener(event, e => {
-if (    e.quit) {
-//dispatch("quitReceived");
-return reject(e.quit);
-} // if
-return resolve(e);
-}, {passive: true, once: true});
-});
+return e.command === "quit"? reject(e) : resolve(e);
+}, {passive: true, once: true}); // listener
+}); // promise
 } // blockUntilEvent
 
 export async function amap(arr,fun) {
@@ -44,4 +30,16 @@ return a.reduce((a,x) => a += x, 0);
 } // sum
 
 export function not (x) {return !x;}
+
+/*export function userMessage (text, options) {
+dispatch("userMessage", {message: text, options});
+} // userMessage
+
+export function errorMessage (text) {
+dispatch("error", {message: text, options: ["info"]});
+} // errorMessage
+
+export function infoMessage (text) {return errorMessage(text);}
+*/
+
 //alert("utilities module loaded");
