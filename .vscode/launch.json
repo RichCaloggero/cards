@@ -1,19 +1,31 @@
 
+
 {
-    "version": "0.2.0",
-    "configurations": [
+"version": "0.2.0",
+"configurations": [
 
-        {
-            "name": "Launch hearts",
-            "type": "firefox",
-            "request": "launch",
-            "reAttach": true,
+{
+"name": "Launch hearts",
+"type": "firefox",
+"request": "launch",
+"reAttach": true,
 
-
-"clearConsoleOnReload": true,
-            "url": "http://localhost:3000/hearts.html",
-            "webRoot": "${workspaceFolder}"
+    "log": {
+        "consoleLevel": {
+            "PathConversion": "Debug",
+            "default": "Error"
         }
+    },
+"clearConsoleOnReload": true,
+"file": "${workspaceFolder}/hearts.html",
+"pathMappings": [{
+"url": "http://localhost:3000/",
+"path": "${workspaceFolder}"
+},
+],
 
-    ]
 }
+
+]
+}
+

@@ -110,7 +110,7 @@ label>hand:
 <script type="module">
 import * as hearts from "./hearts.js";
 import * as cards from "./cards.js";
-import { not, dispatch, blockUntilEvent } from "./utilities.js";
+import { not, extract, sum, dispatch, blockUntilEvent } from "./utilities.js";
 import * as log from "./log.js";
 window.h = hearts, window.l = log;
 
@@ -156,6 +156,24 @@ function startNewRound () {
 dispatch("command", {command: "newRound"});
 } // startNewRound
 
+async function runMultipleGames () {
+if (hearts.isGameRunning()) {
+document.addEventListener("gameComplete", _run, {once: true});
+dispatch("command", {command: "quit"});
+} else {
+await displayStatistics(await hearts.runMultipleGames(Number($runMultipleGames.value)));
+} // if
+
+async function _run (e) {
+if (e.status !== "ok" && e.command !== "quit") {
+$log.insertAdjacentHTML("beforeEnd", `<h2>${e.status}: ${e.command}</h2>`);
+} else {
+await displayStatistics(await hearts.runMultipleGames(Number($runMultipleGames.value)));
+} // if
+} // _run
+} // runMultipleGames
+
+
 function displayHand (hand) {
 fillSelectList($hand, hand);
 } // displayHand
@@ -167,12 +185,7 @@ startNewGame();
 
 $startNewGame.addEventListener("click", startNewGame);
 
-$runMultipleGames.addEventListener("click", e => {
-dispatch("command", {quit: "done"});
-setTimeout(async () => {
-await displayStatistics(await hearts.runMultipleGames(Number(e.target.value)));
-});
-}); // multiple games
+$runMultipleGames.addEventListener("click", runMultipleGames);
 
 $runMultipleGames.addEventListener("keydown", e => {
 if (e.key === " " || e.key === "Enter") e.target.click();
@@ -232,30 +245,28 @@ return $list;
 } // fillSelectList
 
 async function displayStatistics (data) {
-console.debug(data);
 const
 min = [200, 200, 200, 200],
 max = [0, 0, 0, 0],
-sum = [0, 0, 0, 0];
+_sum = [0, 0, 0, 0];
 
-$log.insertAdjacentHTML("beforeEnd", `<h2>${data.length} games completed.</h2>`);
+$log.insertAdjacentHTML("beforeEnd", `<h2>${data.length} games completed; average number of rounds played was ${sum(extract(data, "roundCount")) / data.length}</h2>`);
 for (const game of data) {
-for (let p=0; p<4; p++) {
-const player = game[p];
+game.players.forEach((player, p) => {
 const score = player.score;
 min[p] = Math.min(min[p], score);
 max[p] = Math.max(max[p], score);
-sum[p] += score;
-} // for
+_sum[p] += score;
+}); // forEach
 } // for
 
 $log.insertAdjacentHTML("beforeEnd",
 `<table>
 <tr><th>player</th> <th>average</th> <th>min</th> <th>max</th> <th>strategy</th></tr>
-${data[0].map(
+${data[0].players.map(
 (player, p) => `<tr>
 <th>${player.name}</th>
-<td>${sum[p]/data.length}</td>
+<td>${_sum[p]/data.length}</td>
 <td>${min[p]}</td>
 <td>${max[p]}</td>
 <td>${player.strategy}</td>
@@ -263,6 +274,7 @@ ${data[0].map(
 `).join("\n")}
 </table>`);
 } // displayStatistics
+
 
 /*function displayScores (players) {
 logMessage("scores:");

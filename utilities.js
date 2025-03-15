@@ -7,7 +7,7 @@ document.dispatchEvent(event);
 export async function blockUntilEvent(event, target = document) {
 return new Promise((resolve, reject) => {
 target.addEventListener(event, e => {
-return e.command === "quit"? reject(e) : resolve(e);
+return e.command === "quit"? reject({command: "quit", status: "ok"}) : resolve(e);
 }, {passive: true, once: true}); // listener
 }); // promise
 } // blockUntilEvent
@@ -28,6 +28,10 @@ return count >= n;
 export function sum (a) {
 return a.reduce((a,x) => a += x, 0);
 } // sum
+
+export function extract (objectList, property) {
+return objectList.map(obj => obj[property]);
+} // extract
 
 export function not (x) {return !x;}
 

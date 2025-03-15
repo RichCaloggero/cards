@@ -31,20 +31,22 @@ let gameRunning = false;
 
 export async function startNewGame () {
 const result = await playGame();
-dispatch("gameComplete", result);
+dispatch("gameComplete", {status: result.status, command: result.command});
 return result;
 } // startNewGame
 
 export async function runMultipleGames (count) {
 humanPlayerPresent(false);
 log.initialize(console.log, false);
-const result = [];
+const games = [];
 
 for (let i=0; i<count; i++) {
-result[i] = await playGame(i);
+const result = await playGame(i);
+if (result.status === "error" || (result.status === "ok" && result.command === "quit")) break;
+games[i] = result;
 } // for
 
-return result;
+return games;
 } // playMultipleGames
 
 async function playGame (gameCount = 1) {
@@ -77,11 +79,7 @@ players: players.map(p => ({name: p.name, score: p.score, strategy: p.strategy.n
 }; // result
 
 } catch (e) {
-log.logMessage(`error in round ${roundCount} of game ${gameCount}:\n${e}`);
-result = {
-status: "error",
-reason: e,
-players: null}; // result
+result = e;
 } // try
 
 gameRunning = false;
