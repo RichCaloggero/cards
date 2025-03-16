@@ -4,28 +4,26 @@
 "version": "0.2.0",
 "configurations": [
 
-{
-"name": "Launch hearts",
+{"name": "Launch hearts",
 "type": "firefox",
 "request": "launch",
 "reAttach": true,
 
-    "log": {
-        "consoleLevel": {
-            "PathConversion": "Debug",
-            "default": "Error"
-        }
-    },
+"log": {
+"consoleLevel": {
+"PathConversion": "Debug",
+"default": "Error"
+}
+},
 "clearConsoleOnReload": true,
+
 "file": "${workspaceFolder}/hearts.html",
 "pathMappings": [{
 "url": "http://localhost:3000/",
 "path": "${workspaceFolder}"
+}],
+
 },
-],
-
-}
-
 ]
 }
 

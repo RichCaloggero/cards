@@ -34,18 +34,19 @@ The log will be available so you can see all moves made, or you can just see sco
 <label>Human player: <input id="human-player" type="checkbox" checked></label>
 </fieldset>
 
-<fieldset>
-<legend>Run multiple games</legend>
-<label>Games to run: <input type="number" id="run-multiple-games" accessKey="m" value="1"></label>
-</fieldset>
 
 <fieldset class="hand">
 <legend>Press control+enter to begin a round, enter to play a card, questionmark to show keyboard commands.</legend>
 label>hand:
 <br><select rows="13" autofocus id="hand" accesskey="h">
 </select></label>
-<br><button id="start-new-round">Start new round</button>
+
+<div class="controls">
+<button id="start-new-round">Start new round</button>
 <button id="start-new-game" accessKey="s">Start new game</button>
+<button id="quit" accessKey=""q">Quit</button>button>
+</button><label>Run multiple games: <input type="number" id="run-multiple-games" accessKey="m" value="1"></label>
+</div>div>
 </fieldset>
 
 <hr>
@@ -120,6 +121,7 @@ const $hideTricks = document.querySelector("#hide-tricks");
 const $humanPlayerPresent = document.querySelector("#human-player");
 const $startNewGame = document.querySelector("#start-new-game");
 const $runMultipleGames = document.querySelector("#run-multiple-games");
+const $quit = document.querySelector("#quit");
 const $hand = document.querySelector("#hand");
 const $startNewRound = document.querySelector("#start-new-round");
 
@@ -128,29 +130,23 @@ const $startNewRound = document.querySelector("#start-new-round");
 setupEventListeners();
 log.initialize($log);
 hearts.humanPlayerPresent($humanPlayerPresent.checked);
-hearts.startNewGame();
 $hideTricks.checked? log.hidePreviousTricks() : log.showPreviousTricks();
 $hideRounds.checked? log.hidePreviousRounds() : log.showPreviousRounds();
 
 async function startNewGame () {
 if (hearts.isGameRunning()) {
-dispatch("command", {command: "quit"});
-let e =await blockUntilEvent("gameComplete");
-console.debug(`${e.status}: ${e.reason.command}`);
-
-if (e.status !== "error" || e.reason?.command !== "quit") {
-$log.insertAdjacentHTML("beforeEnd", `<h2>Aborted: ${e.status}; ${e.reason?.command}</h2>`);
+errorMessage("Game already running; press control+q to quit.");
 return;
-} // if
 } // if
 
 hearts.humanPlayerPresent($humanPlayerPresent.checked);
 $hand.innerHTML = "";
 $hand.focus();
-e = await hearts.startNewGame();
-console.debug(e);
-$log.insertAdjacentHTML("beforeEnd", `<h2>${e.status}: ${e.roundCount} rounds played.</h2>`);
+
+hearts.startNewGame();
 } // startNewGame
+
+function quit () {dispatch("command", {command: "quit"});}
 
 function startNewRound () {
 dispatch("command", {command: "newRound"});
@@ -158,19 +154,10 @@ dispatch("command", {command: "newRound"});
 
 async function runMultipleGames () {
 if (hearts.isGameRunning()) {
-document.addEventListener("gameComplete", _run, {once: true});
-dispatch("command", {command: "quit"});
-} else {
-await displayStatistics(await hearts.runMultipleGames(Number($runMultipleGames.value)));
+errorMessage("Game running; press control+q to quit.");
 } // if
 
-async function _run (e) {
-if (e.status !== "ok" && e.command !== "quit") {
-$log.insertAdjacentHTML("beforeEnd", `<h2>${e.status}: ${e.command}</h2>`);
-} else {
-await displayStatistics(await hearts.runMultipleGames(Number($runMultipleGames.value)));
-} // if
-} // _run
+hearts.runMultipleGames(Number($runMultipleGames.value));
 } // runMultipleGames
 
 
@@ -178,7 +165,20 @@ function displayHand (hand) {
 fillSelectList($hand, hand);
 } // displayHand
 
+
 function setupEventListeners () {
+document.addEventListener("gameComplete", e => {
+if (e?.command === "quit") log.logMessage("Quit.");
+else if (e.status === "error") errorMessage(e.reason || e.command);
+else if (e.multiple) displayStatistics(e.games);
+else if (e.humanPlayerPresent) log.logMessage("Game complete.");
+});
+
+$quit.addEventListener("click", quit);
+document.addEventListener("keydown", e => {
+if (e.ctrlKey && e.key === "q") quit();
+});
+
 $humanPlayerPresent.addEventListener("change", e => {
 startNewGame();
 });
@@ -248,33 +248,51 @@ async function displayStatistics (data) {
 const
 min = [200, 200, 200, 200],
 max = [0, 0, 0, 0],
-_sum = [0, 0, 0, 0];
+_sum = [0, 0, 0, 0],
+winners = [0, 0, 0, 0],
+shootingHandCounts = [0, 0, 0, 0];
+
 
 $log.insertAdjacentHTML("beforeEnd", `<h2>${data.length} games completed; average number of rounds played was ${sum(extract(data, "roundCount")) / data.length}</h2>`);
 for (const game of data) {
+game.winners.forEach(i => winners[i] += 1);
+
 game.players.forEach((player, p) => {
 const score = player.score;
 min[p] = Math.min(min[p], score);
 max[p] = Math.max(max[p], score);
 _sum[p] += score;
+shootingHandCounts[p] += player.shootingHandCount;
 }); // forEach
 } // for
 
 $log.insertAdjacentHTML("beforeEnd",
 `<table>
-<tr><th>player</th> <th>average</th> <th>min</th> <th>max</th> <th>strategy</th></tr>
+<tr><th>player</th>
+<th>average</th>
+<th>min</th>
+<th>max</th>
+<th>win count</th>
+<th>shooting hand count</th>
+<th>strategy</th></tr>
 ${data[0].players.map(
 (player, p) => `<tr>
 <th>${player.name}</th>
 <td>${_sum[p]/data.length}</td>
 <td>${min[p]}</td>
 <td>${max[p]}</td>
+<td>${winners[p]}</td>
+<td>${shootingHandCounts[p]}</td>
 <td>${player.strategy}</td>
 </tr>
 `).join("\n")}
 </table>`);
 } // displayStatistics
 
+function errorMessage (message, status = "error") {
+if (message instanceof Object) message = message?.reason || message?.message;
+$log.insertAdjacentHTML("beforeEnd", `<h3>${status}: ${message}</h3>`);
+} // errorMessage
 
 /*function displayScores (players) {
 logMessage("scores:");

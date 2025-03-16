@@ -40,13 +40,15 @@ humanPlayerPresent(false);
 log.initialize(console.log, false);
 const games = [];
 
+let result;
 for (let i=0; i<count; i++) {
-const result = await playGame(i);
-if (result.status === "error" || (result.status === "ok" && result.command === "quit")) break;
-games[i] = result;
+result = await playGame(i);
+//if (i>21) debugger;
+if (result.status === "error") break;
+games.push(result);
 } // for
 
-return games;
+dispatch("gameComplete", {multiple: true, humanPlayerPresent: isHumanPlayerPresent(), count: games.length, status: result.status, reason: result?.reason, command: result?.command, games});
 } // playMultipleGames
 
 async function playGame (gameCount = 1) {
@@ -75,6 +77,7 @@ logMessage(`<h2 class="winners">${displayWinners(players)}</h2>`);
 
 result = {
 status: "ok", roundCount,
+winners: findWinners(players), // indexes
 players: players.map(p => ({name: p.name, score: p.score, strategy: p.strategy.name, shootingHandCount: p.shootingHandCount}))
 }; // result
 
@@ -83,7 +86,7 @@ result = e;
 } // try
 
 gameRunning = false;
-return result;
+    return result;
 } // playGame
 
 async function playRound () {
@@ -175,7 +178,7 @@ card = isHumanPlayer(player)? await userCardPlayed()
 } // if
 //console.debug(`player ${player.name} selected ${cards.displayCard(card)}`);
 
-error = playCard(card, suit, player);
+error = playCard(card, suit, player, trick);
 //console.debug("- card played: ", card, ", by ", player.name, ", error = ", error);
 
 if (error) {
@@ -236,8 +239,14 @@ if (isFirstTrickInRound || player.strategy === null /* because player had two of
 return executeStrategy(player.strategy, hand, suit, trick);
 } // selectCard
 
-function playCard (card, suit, player) {
-const isFirstCardInTrick = suit < 0;
+function playCard (card, suit, player, trick) {
+if (not(card) ) {
+console.debug("card is undefined");
+debugger;
+} // if
+
+
+const isFirstCardInTrick = trick.length === 0;
 const hearts = cards.suitNames.indexOf("hearts");
 
 if (player.hand.length === 0) return `${player.name} has no more cards`;
@@ -277,15 +286,9 @@ if (isHumanPlayerPresent() && showHand) logMessage(`${player.name} has: ${displa
 if (hasChanceOfShootingTheMoon(hand)) {
 if (isHumanPlayerPresent() && showStrategy) logMessage(`${player.name} is attempting to shoot the moon.`);
 player.shootingHandCount += 1;
-return shootingStrategy;
-/*} else if (hasQueenOfSpades(hand)) {
-if (showStrategy) logMessage(`${player.name} is trying to get rid of the queen.`);
-return getRidOfQueenStrategy;
-*/
-} else {
-if (isHumanPlayerPresent() && showStrategy) logMessage(`${player.name} is ducking...`);
-return chooseDuckingStrategy(player);
+//return shootingStrategy;
 } // if
+return chooseDuckingStrategy(player);
 } // chooseStrategy
 
 function chooseDuckingStrategy (player, probability = 1) {
@@ -601,10 +604,16 @@ ${players.map(p => `${p.name}: ${p.score}`).join("\n")}
 } // displayScores
 
 function displayWinners (players) {
-const all = players.toSorted((p1,p2) => p1.score < p2.score? -1 : 1);
-const winners = all.filter(p => p.score === all[0].score);
-return `${winners.map(p => p.name).join(", and ")} won with score ${winners[0].score}.`;
+const winners = findWinners(players); // indexes
+return `${winners.map(p => players[p].name).join(", and ")} won with score ${winners[0].score}.`;
 } // displayWinners
+
+function findWinners (players) {
+const all = [...players.entries()]
+.toSorted((p1,p2) => p1[1].score < p2[1].score? -1 : 1);
+return all.filter(p => p[1].score === all[0][1].score)
+.map(p => p[0]);
+} // findWinners
 
 export async function userStartsRound () {
 //console.debug("userStartsRound:");
