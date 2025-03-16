@@ -44,9 +44,9 @@ label>hand:
 <div class="controls">
 <button id="start-new-round">Start new round</button>
 <button id="start-new-game" accessKey="s">Start new game</button>
-<button id="quit" accessKey=""q">Quit</button>button>
-</button><label>Run multiple games: <input type="number" id="run-multiple-games" accessKey="m" value="1"></label>
-</div>div>
+<button id="quit" accessKey=""q">Quit</button>
+<label>Run multiple games: <input type="number" id="run-multiple-games" accessKey="m" value="1"></label>
+</div>
 </fieldset>
 
 <hr>
@@ -168,10 +168,16 @@ fillSelectList($hand, hand);
 
 function setupEventListeners () {
 document.addEventListener("gameComplete", e => {
-if (e?.command === "quit") log.logMessage("Quit.");
-else if (e.status === "error") errorMessage(e.reason || e.command);
-else if (e.multiple) displayStatistics(e.games);
-else if (e.humanPlayerPresent) log.logMessage("Game complete.");
+if (e?.command === "quit") {
+log.logMessage("Quit.");
+} else if (e.status === "error") {
+errorMessage(e?.message || e.command);
+console.error("error: ", e?.message, "\n", e?.details, "\n");
+} else if (e.multiple) {
+displayStatistics(e.games);
+} else if (e.humanPlayerPresent) {
+log.logMessage("Game complete.");
+} // if
 });
 
 $quit.addEventListener("click", quit);
@@ -224,15 +230,6 @@ document.addEventListener("updateHand", e => {
 displayHand(e.hand)
 });
 
-/*document.addEventListener("trickStart", e => {
-});
-
-document.addEventListener("trickComplete", e => {
-});
-*/
-
-document.addEventListener("gameComplete", e => {
-});
 } // setupEventListeners
 
 function fillSelectList($list, items) {
@@ -246,47 +243,59 @@ return $list;
 
 async function displayStatistics (data) {
 const
-min = [200, 200, 200, 200],
-max = [0, 0, 0, 0],
-_sum = [0, 0, 0, 0],
+minScores = [200, 200, 200, 200],
+maxScores = [0, 0, 0, 0],
+scores = [0, 0, 0, 0],
 winners = [0, 0, 0, 0],
-shootingHandCounts = [0, 0, 0, 0];
+shootingHandCounts = [0, 0, 0, 0],
+moonCounts = [0, 0, 0, 0],
+moonTests = [0, 0, 0, 0];
+const roundsPlayed = sum(extract(data, "roundCount"));
 
-
-$log.insertAdjacentHTML("beforeEnd", `<h2>${data.length} games completed; average number of rounds played was ${sum(extract(data, "roundCount")) / data.length}</h2>`);
 for (const game of data) {
 game.winners.forEach(i => winners[i] += 1);
 
 game.players.forEach((player, p) => {
 const score = player.score;
-min[p] = Math.min(min[p], score);
-max[p] = Math.max(max[p], score);
-_sum[p] += score;
+minScores[p] = Math.min(minScores[p], score);
+maxScores[p] = Math.max(maxScores[p], score);
+scores[p] += score;
 shootingHandCounts[p] += player.shootingHandCount;
+moonCounts[p] += player.moonCount;
+moonTests[p] += (player.moonCount !== player.moonHands.length)? 1 : 0;
+
 }); // forEach
 } // for
 
+$log.removeAttribute("role");
 $log.insertAdjacentHTML("beforeEnd",
-`<table>
+`<h2>${data.length} games completed, ${roundsPlayed} rounds played, average of${(roundsPlayed / data.length).toFixed(1)} per game.</h2>
+<table>
 <tr><th>player</th>
 <th>average</th>
-<th>min</th>
-<th>max</th>
-<th>win count</th>
-<th>shooting hand count</th>
+<th>min score</th>
+<th>max score</th>
+<th>wins</th>
+<th>shooting hands</th>
+<th>Shooting success</th>
+<th>Moon tests</th>
 <th>strategy</th></tr>
-${data[0].players.map(
-(player, p) => `<tr>
+${data[0].players.map((player, p) =>
+`<tr>
 <th>${player.name}</th>
-<td>${_sum[p]/data.length}</td>
-<td>${min[p]}</td>
-<td>${max[p]}</td>
-<td>${winners[p]}</td>
+<td>${scores[p] / data.length}</td>
+<td>${minScores[p]}</td>
+<td>${maxScores[p]}</td>
+<td>${winners[p]} (${(winners[p]/data.length*100).toFixed(1)}%)</td>
 <td>${shootingHandCounts[p]}</td>
+<td>${moonCounts[p]}</td>
+<td>${moonTests[p]}</td>
 <td>${player.strategy}</td>
 </tr>
 `).join("\n")}
-</table>`);
+</table>
+`);
+$log.setAttribute("role", "log");
 } // displayStatistics
 
 function errorMessage (message, status = "error") {

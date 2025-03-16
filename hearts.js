@@ -48,7 +48,8 @@ if (result.status === "error") break;
 games.push(result);
 } // for
 
-dispatch("gameComplete", {multiple: true, humanPlayerPresent: isHumanPlayerPresent(), count: games.length, status: result.status, reason: result?.reason, command: result?.command, games});
+const gameComplete = {multiple: true, humanPlayerPresent: isHumanPlayerPresent(), count: games.length, status: result.status, details: result?.details, command: result?.command, games};
+dispatch("gameComplete", gameComplete);
 } // playMultipleGames
 
 async function playGame (gameCount = 1) {
@@ -57,8 +58,10 @@ roundCount = 0;
 
 for (const player of players) {
 player.score = 0;
-player.shootingHandCount = 0;
+player.possibleMoony = false;
+player.moonCount = 0;
 player.hand = [];
+player.moonHands = [];
 player.tricks = [];
 player.strategy = null;
 } // for
@@ -76,13 +79,17 @@ await playRound ();
 logMessage(`<h2 class="winners">${displayWinners(players)}</h2>`);
 
 result = {
-status: "ok", roundCount,
+status: "ok",
+roundCount: roundCount,
 winners: findWinners(players), // indexes
-players: players.map(p => ({name: p.name, score: p.score, strategy: p.strategy.name, shootingHandCount: p.shootingHandCount}))
+players: players.map(p =>
+({name: p.name, score: p.score, moonCount: p.moonCount, shootingHandCount: p.shootingHandCount, moonHands: p.moonHands, strategy: p.strategy.name})
+) // map
 }; // result
 
+
 } catch (e) {
-result = e;
+result = {status: "error", message: e?.message, details: e};
 } // try
 
 gameRunning = false;
@@ -109,6 +116,8 @@ if (queenAlert) logMessage(`${players.find(player => hasQueenOfSpades(player.han
 
 const trickList = [];
 for (const player of players) {
+player._hand =  player.hand.slice(0); // for keeping track of shooter hands
+player.pointsThisRound = 0;
 player.tricks = [];
 player.strategy = null;
 } // for
@@ -285,7 +294,7 @@ if (isHumanPlayerPresent() && showHand) logMessage(`${player.name} has: ${displa
 
 if (hasChanceOfShootingTheMoon(hand)) {
 if (isHumanPlayerPresent() && showStrategy) logMessage(`${player.name} is attempting to shoot the moon.`);
-player.shootingHandCount += 1;
+player.possibleMoony = true;
 //return shootingStrategy;
 } // if
 return chooseDuckingStrategy(player);
@@ -541,13 +550,16 @@ return players.findIndex(player => hasTwoOfClubs(player.hand));
 
 function assignTrick (trick) {
 //console.debug("assignTrick: ", trick);
+// firt card in trick defines the winning suit
 const suit = trick[0].card.suit;
+// player who played highest card in that suit takes the trick
 const player = trick.toSorted(trickHighCardFirst ).filter(item => item.card.suit === suit)[0].player;
 player.tricks.push(trick);
 //console.debug(`- ${player.name} took trick `, trick, " with suit ", suit);
 
 const points = calculatePoints(cardsInTrick(trick));
 player.score += points;
+player.pointsThisRound += points;
 //console.debug(`- ${points} added to ${player.name}`);
 return player;
 } // assignTrick
@@ -596,6 +608,16 @@ return Math.max(...players.map(p => p.score));
 } // highestScore
 
 function displayScores (players) {
+// any shooters
+const moony = players.filter(p => p.pointsThisRound === 26)[0];
+if (moony) {
+// moony gets -26 points, everyone else gets 26 points
+players.forEach(p => p.score += (p === moony? -26 : 26));
+moony.moonCount += 1;
+moony.moonHands.push(moony._hand);
+
+    } // if
+
 return `<div class="scores">
 <h3>Scores</h3><pre>
 ${players.map(p => `${p.name}: ${p.score}`).join("\n")}
@@ -611,6 +633,7 @@ return `${winners.map(p => players[p].name).join(", and ")} won with score ${win
 function findWinners (players) {
 const all = [...players.entries()]
 .toSorted((p1,p2) => p1[1].score < p2[1].score? -1 : 1);
+
 return all.filter(p => p[1].score === all[0][1].score)
 .map(p => p[0]);
 } // findWinners
