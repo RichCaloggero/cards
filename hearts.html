@@ -168,7 +168,7 @@ fillSelectList($hand, hand);
 
 function setupEventListeners () {
 document.addEventListener("gameComplete", e => {
-if (e?.command === "quit") {
+if (e.status === "error" && e.command === "quit") {
 log.logMessage("Quit.");
 } else if (e.status === "error") {
 errorMessage(e?.message || e.command);
@@ -276,7 +276,6 @@ $log.insertAdjacentHTML("beforeEnd",
 <th>min score</th>
 <th>max score</th>
 <th>wins</th>
-<th>shooting hands</th>
 <th>Shooting success</th>
 <th>Moon tests</th>
 <th>strategy</th></tr>
@@ -287,7 +286,6 @@ ${data[0].players.map((player, p) =>
 <td>${minScores[p]}</td>
 <td>${maxScores[p]}</td>
 <td>${winners[p]} (${(winners[p]/data.length*100).toFixed(1)}%)</td>
-<td>${shootingHandCounts[p]}</td>
 <td>${moonCounts[p]}</td>
 <td>${moonTests[p]}</td>
 <td>${player.strategy}</td>

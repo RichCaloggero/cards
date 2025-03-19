@@ -83,13 +83,13 @@ status: "ok",
 roundCount: roundCount,
 winners: findWinners(players), // indexes
 players: players.map(p =>
-({name: p.name, score: p.score, moonCount: p.moonCount, shootingHandCount: p.shootingHandCount, moonHands: p.moonHands, strategy: p.strategy.name})
+({name: p.name, score: p.score, moonCount: p.moonCount, moonHands: p.moonHands, strategy: p.strategy.name})
 ) // map
 }; // result
 
 
 } catch (e) {
-result = {status: "error", message: e?.message, details: e};
+result = {status: "error", message: e?.message, command: e?.command, details: e};
 } // try
 
 gameRunning = false;
@@ -127,7 +127,7 @@ while (not(roundComplete())) {
 //console.debug("hearts.trickStart...");
 log.trickStart();
 trickWinner = await playTrick(trickWinner?.player, trickList);
-trickList.push(trickWinner.trick);
+trickList.push(trickWinner);
 
 //console.debug("trickWinner: ", trickWinner);
 log.currentTrick(`<p class="trick-info">${trickWinner.player.name} took ${displayTrick(trickWinner.trick)}.</p>\n`);
@@ -151,14 +151,14 @@ log.roundComplete(roundCount);
 } // playRound
 
 
-async function playTrick (startingPlayer) {
+async function playTrick (startingPlayer, trickList) {
 let isFirstTrickInRound = not(startingPlayer);
 const playerOrder = trickOrder(isFirstTrickInRound? indexOfPlayerHoldingTwoOfClubs() : players.indexOf(startingPlayer));
 //console.debug("trick order is ", playerOrder.map(p => p.name).join(", "));
 
 let player = null, trick = [];
 for (player of playerOrder) {
-const card = await playTurn(player, trick, isFirstTrickInRound);
+const card = await playTurn(player, trick, isFirstTrickInRound, trickList);
 trick.push({player, card});
 //console.debug(`hearts: player.name} played ${cards.displayCard(card)}.`);
 log.currentTrick(`<p class="trick-card">${player.name} played ${cards.displayCard(card)}.</p>\n`);
@@ -171,7 +171,7 @@ const winner = assignTrick(trick);
 return {trick, player: winner};
 } // playTrick
 
-async function playTurn (player, trick, isFirstTrickInRound) {
+async function playTurn (player, trick, isFirstTrickInRound, trickList) {
 const isFirstCardInTrick = trick.length === 0;
 const suit = not(isFirstCardInTrick)? trick[0].card.suit : -1;
 let card = null;
@@ -183,7 +183,7 @@ if (isFirstTrickInRound) {
 card = twoOfClubs;
 } else {
 card = isHumanPlayer(player)? await userCardPlayed()
-: selectCard(player, suit, trick);
+: selectCard(player, suit, trick, trickList);
 } // if
 //console.debug(`player ${player.name} selected ${cards.displayCard(card)}`);
 
@@ -232,7 +232,7 @@ index = (index+1) % length;
 return order;
 } // reorder
 
-function selectCard (player, suit, trick) {
+function selectCard (player, suit, trick, trickList) {
 if (isHumanPlayer(player)) {
 errorMessage("this should never be called with human player!");
 //console.debug("this should never be called with human player: ", player);
@@ -244,8 +244,8 @@ const isFirstTrickInRound = hand.length === 13;
 
 if (hand.length === 0) return "no cards left in hand; should never happen";
 
-if (isFirstTrickInRound || player.strategy === null /* because player had two of clubs */) player.strategy = chooseStrategy(hand, suit);
-return executeStrategy(player.strategy, hand, suit, trick);
+if (isFirstTrickInRound || player.strategy === null /* because player had two of clubs */) player.strategy = strategyChooser(hand, suit);
+return executeStrategy(player.strategy, hand, suit, trick, trickList);
 } // selectCard
 
 function playCard (card, suit, player, trick) {
@@ -288,7 +288,7 @@ throw new Error(`error: card ${cards.displayCard    (card)} not found in hand; t
 
 /// strategies
 
-function chooseStrategy (hand, suit, trick) {
+function strategyChooser (hand, suit, trick) {
 const player = players.find(p => p.hand === hand);
 if (isHumanPlayerPresent() && showHand) logMessage(`${player.name} has: ${displayCards(player.hand)}`);
 
@@ -297,20 +297,19 @@ if (isHumanPlayerPresent() && showStrategy) logMessage(`${player.name} is attemp
 player.possibleMoony = true;
 //return shootingStrategy;
 } // if
-return chooseDuckingStrategy(player);
-} // chooseStrategy
-
-function chooseDuckingStrategy (player, probability = 1) {
+return chooseStrategy(player);
+} // chooseStrategystrategyChooser
+function chooseStrategy (player, probability = 1) {
 return (player === players[0] || player === players[1])?
-duckingStrategy1 : duckingStrategy2;
+strategy1 : strategy2;
 
-//return Math.random() < probability? duckingStrategy1 : duckingStrategy2;
+//return Math.random() < probability? strategy1 : strategy2;
 } // chooseDuckingStrategy
 
-function executeStrategy (strategy, hand, suit, trick) {
+function executeStrategy (strategy, hand, suit, trick, trickList) {
 const player = players.find(p => p.hand === hand);
 try {
-return strategy(hand, suit, trick);
+return strategy(hand, suit, trick, trickList);
 } catch (e) {
 //console.error(e);
 debugger;
@@ -318,10 +317,13 @@ debugger;
 } // executeStrategy
 
 
-function duckingStrategy1 (hand, suit, trick) {
+function strategy1 (hand, suit, trick, trickList) {
 const player = players.find(p => p.hand === hand);
 const isFirstCardInTrick = trick.length === 0;
 const isFirstTrickInRound = hand.length === 13;
+
+const moony = moonWatch(trickList);
+const iAmShooting = moony === player;
 
 // indexed by suit
 const myHand = organizeBySuit(hand);
@@ -333,6 +335,12 @@ const hasQueenOfSpades = mySpades.length !== myOtherSpades.length;
 if (hand.length === 1 ) return hand[0];
 
 if (isFirstCardInTrick) {
+if (iAmShooting) {
+return cards.findHighestCardInList(heartsBroken? hand : hand.filter(card => card.suit !== hearts))
+|| cards.findHighestCardInList(hand);
+} // if
+
+
 // which list to operate on
 const list = shortestList(...
 hasQueenOfSpades && heartsBroken? [myHearts, myClubs, myDiamonds]
@@ -353,7 +361,8 @@ hasQueenOfSpades || seenQueenThisRound? cards.findHighestCardInList(list)
 // try to follow suit
 
 if (myHand[suit].length === 0)
-return hasQueenOfSpades? queenOfSpades
+return iAmShooting? cards.findLowestCardInList(hand.filter(card => card.suit !== hearts && not(cards.isCard(card, queenOfSpades)))) || cards.findLowestCardInList(hand)
+: hasQueenOfSpades&& not(iAmShooting)? queenOfSpades
 : cards.rank(mySpades, king) > 0? cards.findHighestCardInList(mySpades)
 : (cards.findHighestCardInList(myHearts) || cards.findHighestCardInList(hand));
 
@@ -369,12 +378,13 @@ return hasQueenOfSpades? (cards.findHighestCardInList(myOtherSpades) || queenOfS
 } // if
 } // duckingStrategy1
 
-function duckingStrategy2 (hand, suit, trick) {
+function strategy2 (hand, suit, trick, trickList) {
 const isFirstCardInTrick = trick.length === 0;
 const hasQueenOfSpades = hand.find(card => cards.isCard(card, queenOfSpades));
 
 // if only one card in hand, just return it
 if (hand.length === 1 ) return hand[0];
+
 
 if (isFirstCardInTrick) {
 
@@ -383,6 +393,7 @@ if (cards.rank(cards.hasSuit(hearts, hand), 2, 4).length > 0) return cards.findL
 } // if
 
 return cards.findLowestCardInList(shortestSuitInList(hand.filter(card => card.suit !== hearts && card.suit !== spades)))
+|| cards.findLowestCardInList(hand.filter(card => card.suit !== hearts))
 || cards.findLowestCardInList(hand);
 
 } else {
@@ -564,8 +575,8 @@ player.pointsThisRound += points;
 return player;
 } // assignTrick
 
-function calculatePoints (cards) {
-return cards.reduce((score, card) => score + cardScore(card), 0);
+function calculatePoints (cardList) {
+return cardList.reduce((score, card) => score + cardScore(card), 0);
 } // calculatePoints
 
 function cardScore (card) {
@@ -715,9 +726,27 @@ return cards.has(cards.createCard(2, clubs), hand);
 
 
 function hasChanceOfShootingTheMoon (hand) {
-return cards.rank(hand, jack).length >= 8 && cards.rank(cards.hasSuit(hearts, hand), queen).length === 3;
+const rank = cards.rank, hasSuit = cards.hasSuit;
+return (
+rank(hand, king).length >= 4 && hasSuit(hearts, hand).length >= 8
+) || (
+rank(hand, jack).length >= 8 && rank(hasSuit(hearts, hand), queen).length === 3
+) || (
+rank(hand, king).length === 8 && hasSuit(hearts, hand).length > 4
+);
 } // hasChanceOfShootingTheMoon 
 
+function moonWatch (trickList, minLength = 7) {
+const list = trickList.map(item => ({player: item.player, points: calculatePoints(cardsInTrick(item.trick))}))
+.filter(item => item.points > 0)
+.map(item => item.player);
+
+const player  = list.length > 0 && list.every(p => p === list[0])?
+list[0] : null;
+
+
+return trickList.length > minLength && player? player : null;
+} // isPossibleActiveShooter
 
 export function humanPlayerPresent (state) {
 players[0].human = Boolean(state);
@@ -730,3 +759,4 @@ export function isGameRunning () {return gameRunning;}
 
 
 //alert("hearts module loaded");
+
