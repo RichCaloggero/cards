@@ -638,7 +638,7 @@ ${players.map(p => `${p.name}: ${p.score}`).join("\n")}
 
 function displayWinners (players) {
 const winners = findWinners(players); // indexes
-return `${winners.map(p => players[p].name).join(", and ")} won with score ${winners[0].score}.`;
+return `${winners.map(p => players[p].name).join(", and ")} won with score ${players[winners[0]].score}.`;
 } // displayWinners
 
 function findWinners (players) {
