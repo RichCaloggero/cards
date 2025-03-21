@@ -82,6 +82,7 @@ result = {
 status: "ok",
 roundCount: roundCount,
 winners: findWinners(players), // indexes
+humanPlayerPresent: isHumanPlayerPresent(),
 players: players.map(p =>
 ({name: p.name, score: p.score, moonCount: p.moonCount, moonHands: p.moonHands, strategy: p.strategy.name})
 ) // map
@@ -203,14 +204,23 @@ debugger;
 return card;
 } // playTurn
 
-export async function userCardPlayed (context) {
+export async function userCardPlayed (trick, trickList) {
 setTimeout(() => {
 //console.debug("hearts.your turn");
 log.prompt("Your turn.");
 }, 400);
+
 let e;
-while (e = await blockUntilEvent("command")) {
+while (true) {
+e = await blockUntilEvent("command");
 if (e.command === "playCard") return e.card;
+if (e.command === "undo") {
+if (undo(trick, trickList)) {
+log.prompt("Undone; your turn.");
+} else {
+log.errorMessage("Cannot undo; your turn.");
+} // if
+} // if
 } // while
 } // userCardPlayed
 
@@ -334,6 +344,7 @@ const hasQueenOfSpades = mySpades.length !== myOtherSpades.length;
 // if only one card in hand, just return it
 if (hand.length === 1 ) return hand[0];
 
+
 if (isFirstCardInTrick) {
 if (iAmShooting) {
 return cards.findHighestCardInList(heartsBroken? hand : hand.filter(card => card.suit !== hearts))
@@ -362,6 +373,8 @@ hasQueenOfSpades || seenQueenThisRound? cards.findHighestCardInList(list)
 
 if (myHand[suit].length === 0)
 return iAmShooting? cards.findLowestCardInList(hand.filter(card => card.suit !== hearts && not(cards.isCard(card, queenOfSpades)))) || cards.findLowestCardInList(hand)
+// might be queen fishing
+: hasQueenOfSpades && trick[0].card.rank > queen && moony === trick[0].player? cards.findLowesCardInList(myHand)
 : hasQueenOfSpades&& not(iAmShooting)? queenOfSpades
 : cards.rank(mySpades, king) > 0? cards.findHighestCardInList(mySpades)
 : (cards.findHighestCardInList(myHearts) || cards.findHighestCardInList(hand));
@@ -370,13 +383,14 @@ if (suit !== spades)
 return hasQueenOfSpades? cards.findHighestCardInSuit(suit,hand)
 : cards.findLowestCardInSuit(suit, hand);
 
-// dump queen if higher card already on trick
-if (hasQueenOfSpades && cards.rank(cardsInTrick(trick), king).length > 0) return queenOfSpades;
+// dump queen if higher card already on trick and not shooting
+if (iAmShooting && hasQueenOfSpades) return queenOfSpades;
+else if (hasQueenOfSpades && cards.rank(cardsInTrick(trick), king).length > 0) return queenOfSpades;
 
 return hasQueenOfSpades? (cards.findHighestCardInList(myOtherSpades) || queenOfSpades)
 : cards.findLowestCardInList(mySpades);
 } // if
-} // duckingStrategy1
+} // strategy1
 
 function strategy2 (hand, suit, trick, trickList) {
 const isFirstCardInTrick = trick.length === 0;
@@ -649,6 +663,10 @@ return all.filter(p => p[1].score === all[0][1].score)
 .map(p => p[0]);
 } // findWinners
 
+function undo (trick, trickList) {
+return false;
+} // undo
+
 export async function userStartsRound () {
 //console.debug("userStartsRound:");
 let e;
@@ -743,7 +761,6 @@ const list = trickList.map(item => ({player: item.player, points: calculatePoint
 
 const player  = list.length > 0 && list.every(p => p === list[0])?
 list[0] : null;
-
 
 return trickList.length > minLength && player? player : null;
 } // isPossibleActiveShooter

@@ -44,7 +44,8 @@ label>hand:
 <div class="controls">
 <button id="start-new-round">Start new round</button>
 <button id="start-new-game" accessKey="s">Start new game</button>
-<button id="quit" accessKey=""q">Quit</button>
+<button id="undo" accessKey="z">Undo</button>
+<button id="quit" accessKey="q">Quit</button>
 <label>Run multiple games: <input type="number" id="run-multiple-games" accessKey="m" value="1"></label>
 </div>
 </fieldset>
@@ -121,6 +122,7 @@ const $hideTricks = document.querySelector("#hide-tricks");
 const $humanPlayerPresent = document.querySelector("#human-player");
 const $startNewGame = document.querySelector("#start-new-game");
 const $runMultipleGames = document.querySelector("#run-multiple-games");
+const $undo = document.querySelector("#undo");
 const $quit = document.querySelector("#quit");
 const $hand = document.querySelector("#hand");
 const $startNewRound = document.querySelector("#start-new-round");
@@ -145,6 +147,8 @@ $hand.focus();
 
 hearts.startNewGame();
 } // startNewGame
+
+function undo () {dispatch("command", {command: "undo"});}
 
 function quit () {dispatch("command", {command: "quit"});}
 
@@ -181,17 +185,19 @@ log.logMessage("Game complete.");
 });
 
 $quit.addEventListener("click", quit);
+$undo.addEventListener("click", undo);
+$startNewGame.addEventListener("click", startNewGame);
+$runMultipleGames.addEventListener("click", runMultipleGames);
+
+
 document.addEventListener("keydown", e => {
 if (e.ctrlKey && e.key === "q") quit();
+else if (e.ctrlKey && e.key === "z") undo();
 });
 
 $humanPlayerPresent.addEventListener("change", e => {
 startNewGame();
 });
-
-$startNewGame.addEventListener("click", startNewGame);
-
-$runMultipleGames.addEventListener("click", runMultipleGames);
 
 $runMultipleGames.addEventListener("keydown", e => {
 if (e.key === " " || e.key === "Enter") e.target.click();
@@ -203,7 +209,7 @@ $hideRounds.addEventListener("change", e => e.target.checked? log.hidePreviousRo
 $hand.addEventListener("click", e => e.target.selectedOptions.length > 0? dispatch("command", {command: "playCard", card: JSON.parse(e.target.selectedOptions[0].value)}) : "");
 $startNewRound.addEventListener("click", startNewRound);
 
-document.addEventListener("keydown", e => {
+$hand.addEventListener("keydown", e => {
 if (e.key === "Enter") {
 e.preventDefault();
 e.stopPropagation();

@@ -17,12 +17,8 @@
 },
 "clearConsoleOnReload": true,
 
-"file": "${workspaceFolder}/hearts.html",
-"pathMappings": [{
-"url": "http://localhost:3000/",
-"path": "${workspaceFolder}"
-}],
-
+"webRoot": "${workspaceFolder}",
+"url": "http://127.0.0.1:5500/hearts.html"
 },
 ]
 }

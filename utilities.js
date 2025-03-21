@@ -7,7 +7,9 @@ document.dispatchEvent(event);
 export async function blockUntilEvent(event, target = document) {
 return new Promise((resolve, reject) => {
 target.addEventListener(event, e => {
-return e.command === "quit"? reject({command: "quit", status: "error", message: "quit"}) : resolve(e);
+return e.command === "quit"?
+reject({command: "quit", status: "error", message: "quit", details: e})
+: resolve(Object.assign({}, e, {status: "ok"}));
 }, {passive: true, once: true}); // listener
 }); // promise
 } // blockUntilEvent
